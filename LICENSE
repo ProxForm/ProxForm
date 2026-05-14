@@ -1,0 +1,39 @@
+PROXFORM — PROPRIETARY LICENSE
+
+Copyright (c) 2026 Artivicolab. All rights reserved.
+
+ProxForm is proprietary software. The source files served as part of this
+application (HTML, CSS, JavaScript) are necessarily readable by your
+browser in order to function — that is a property of how the web works,
+not a grant of rights.
+
+NO RIGHTS ARE GRANTED EXCEPT THE FOLLOWING:
+
+  1. You may use ProxForm at the URLs operated by Artivicolab for its
+     intended purpose: building and exchanging encrypted patient intake
+     forms.
+
+  2. You may view source files for the purpose of security review or
+     integration debugging on your own device.
+
+YOU MAY NOT, WITHOUT PRIOR WRITTEN PERMISSION FROM ARTIVICOLAB:
+
+  - copy, redistribute, or republish any source file or asset, in whole
+    or in part;
+  - create derivative works, forks, or competing products based on the
+    source code, design, copy, layout, or visual identity;
+  - rehost, mirror, or proxy ProxForm under another name or brand;
+  - use ProxForm in an automated, scripted, or systematic way (scraping,
+    bulk session generation, etc.);
+  - remove, obscure, or alter any copyright, trademark, or attribution
+    notice;
+  - use the names "ProxForm" or "Artivicolab", or any confusingly similar
+    name, in connection with any other product or service.
+
+NO WARRANTY. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM USE OF THE SOFTWARE.
+
+For licensing enquiries, contact Artivicolab.

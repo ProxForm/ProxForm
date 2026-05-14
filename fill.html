@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fill in the form — ProxForm</title>
+  <meta name="description" content="Securely fill in a medical form from your clinician. End-to-end encrypted, peer-to-peer.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/icons/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css?v=5">
+  <script src="/js/theme.js?v=5" defer></script>
+  <script src="/js/storage.js?v=5" defer></script>
+  <script src="/js/netcheck.js?v=5" defer></script>
+  <script src="/js/crypto.js?v=5" defer></script>
+  <script src="/js/p2p.js?v=5" defer></script>
+  <script src="/js/render.js?v=5" defer></script>
+  <script src="/js/fill.js?v=5" defer></script>
+  <script src="/js/footer.js?v=5" defer></script>
+  <script src="/js/analytics.js?v=5" defer></script>
+</head>
+<body class="app-page">
+  <header class="topbar">
+    <a class="brand" href="/">ProxForm</a>
+    <div class="topbar-actions">
+      <span id="net-status" class="net-status net-checking" title="Checking outbound connectivity to STUN…">Checking…</span>
+      <span id="conn-status" class="conn-status">Not connected</span>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+
+    <!-- No offer in URL: dead end. -->
+    <section id="step-noinvite" class="step hidden">
+      <h1>This page needs an invitation link</h1>
+      <p class="muted">Your clinician should have sent you a link that looks like <code>https://…/fill.html#offer=…</code>. Open that link, then come back here.</p>
+    </section>
+
+    <!-- Step 1: passphrase entry -->
+    <section id="step-pass" class="step hidden">
+      <h1>Enter the passphrase</h1>
+      <p class="muted">Your clinician sent you a passphrase through a different channel (SMS, phone). Enter it below — without it, the form cannot be unlocked.</p>
+      <label>
+        <span>Passphrase</span>
+        <input id="pass-input" type="text" autocomplete="off" placeholder="e.g. storm-fox-river-4821">
+      </label>
+      <p id="pass-error" class="error hidden">Wrong passphrase. Try again.</p>
+      <div class="actions">
+        <button id="btn-unlock" class="primary">Unlock →</button>
+      </div>
+    </section>
+
+    <!-- Step 2: show reply link to send back -->
+    <section id="step-reply" class="step hidden">
+      <h1>Send this reply link back</h1>
+      <p class="muted">Copy this link and send it back to your clinician (any channel works). As soon as they paste it, you'll be connected.</p>
+      <label class="readonly-field">
+        <span>Reply link</span>
+        <div class="copy-row">
+          <input id="reply-url" type="text" readonly>
+          <button id="copy-reply" class="secondary">Copy</button>
+        </div>
+      </label>
+      <p class="muted" id="waiting-line">Waiting for your clinician to accept…</p>
+    </section>
+
+    <!-- Step 3: the form -->
+    <section id="step-form" class="step hidden">
+      <div class="live-header">
+        <h1 id="form-title-display">Form</h1>
+        <div id="session-code" class="session-code" title="Read this code aloud with your clinician — both screens must match."></div>
+      </div>
+      <p id="form-desc-display" class="muted"></p>
+
+      <form id="patient-form" class="patient-form"></form>
+
+      <div class="actions">
+        <button id="btn-submit" class="primary">Submit answers</button>
+      </div>
+    </section>
+
+    <!-- Step 4: submitted -->
+    <section id="step-done" class="step hidden">
+      <h1>Done — your answers have been sent</h1>
+      <p class="muted">Your clinician received your answers directly in their browser. Nothing has been stored on any server. You can close this tab.</p>
+    </section>
+
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <p class="footer-tagline"><strong>Private by design.</strong> ProxForm is <em>GDPR-compliant by architecture</em> — your answers travel browser-to-browser, end-to-end encrypted. Like a sheet of paper, not a database.</p>
+      <nav class="footer-nav">
+        <a href="/#how">How it works</a>
+        <a href="/#why">Why GDPR-proof</a>
+        <a href="/#faq">FAQ</a>
+        <button id="contact-btn" type="button" class="link-btn">Contact us</button>
+      </nav>
+      <p class="footer-attribution">
+        ProxForm by <a href="https://artivicolab.com" target="_blank" rel="noopener">Artivicolab</a>
+        · Auditable · No accounts · No PHI at rest
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

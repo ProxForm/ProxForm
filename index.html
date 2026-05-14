@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GDPR-Proof Medical Forms — 100% Browser-Only, Peer-to-Peer | ProxForm</title>
+  <meta name="description" content="GDPR-proof medical intake forms. 100% browser-only, end-to-end encrypted, peer-to-peer. Zero servers, zero database, zero PHI at rest. No DPA needed. Free, no account.">
+  <meta name="keywords" content="GDPR medical form, GDPR-proof patient intake, GDPR-compliant questionnaire, encrypted medical form, peer-to-peer medical form, no-server patient form, end-to-end encrypted intake, browser-only medical form, GDPR clinician tool, zero data at rest medical">
+  <meta name="theme-color" content="#0a7f5f">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://proxform.com/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="GDPR-Proof Medical Forms — 100% Browser-Only | ProxForm">
+  <meta property="og:description" content="Medical intake forms with zero data at rest. End-to-end encrypted, peer-to-peer, no server. GDPR-proof by architecture.">
+  <meta property="og:url" content="https://proxform.com/">
+  <meta property="og:site_name" content="ProxForm">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="GDPR-Proof Medical Forms — 100% Browser-Only | ProxForm">
+  <meta name="twitter:description" content="Medical intake forms with zero data at rest. End-to-end encrypted, peer-to-peer, no server.">
+
+  <link rel="icon" href="/icons/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css?v=5">
+  <script src="/js/theme.js?v=5" defer></script>
+  <script src="/js/footer.js?v=5" defer></script>
+  <script src="/js/analytics.js?v=5" defer></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ProxForm",
+    "applicationCategory": "HealthApplication",
+    "operatingSystem": "Web Browser",
+    "description": "GDPR-proof, browser-only, peer-to-peer medical intake forms. End-to-end encrypted. Zero servers, zero database, zero PHI at rest.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+    "featureList": [
+      "100% browser-only — no server, no database",
+      "End-to-end encrypted (PBKDF2 + AES-GCM, DTLS 1.3)",
+      "Two-channel out-of-band passphrase sharing",
+      "Session verification (SAS) to defend against MITM",
+      "No accounts, no cookies, no analytics"
+    ]
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is ProxForm GDPR-compliant?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "ProxForm is GDPR-proof by architecture: there is no server-side storage of patient data, no third-party processors, and no PHI at rest. The clinician remains the data controller for any local copies they choose to save, but ProxForm itself eliminates the data-at-rest, processor-relationship, and transit-encryption risk surfaces that drive most GDPR exposure."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need a Data Processing Agreement (DPA) to use ProxForm?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. ProxForm never receives or processes patient data — answers travel directly browser-to-browser over an end-to-end encrypted WebRTC channel. There is no processor relationship to formalize because there is no processor."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Where is patient data stored?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Nowhere by default. Answers exist only in the two open browser tabs during the session. The clinician can choose to save a local copy (JSON or printed PDF) on their own device — that copy is then their responsibility under their own legal basis."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How is the connection encrypted?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "PBKDF2 (100,000 iterations, SHA-256) derives a key from the shared passphrase, which encrypts the WebRTC handshake metadata with AES-256-GCM. The data channel itself runs over DTLS 1.3 (browser default). A short verification code (SAS) lets both sides confirm there's no person-in-the-middle."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What about HIPAA?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "ProxForm is designed around GDPR principles. HIPAA is a separate US regulatory framework with its own requirements (BAAs, audit logs, etc.). The same zero-data-at-rest architecture is favorable under HIPAA too, but we do not market ProxForm as a HIPAA-compliant solution."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does ProxForm cost anything?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "ProxForm runs entirely in your browser with no accounts and no analytics. Pricing for clinical use will be announced — early users can contact Artivicolab for access."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body class="home-page">
+  <header class="topbar">
+    <a class="brand" href="/">ProxForm</a>
+    <div class="topbar-actions">
+      <a class="text-btn" href="/builder.html">Build a form</a>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="gdpr-badge" aria-label="GDPR-proof by design">
+        <span class="gdpr-badge-mark">GDPR</span>
+        <span class="gdpr-badge-text">100% Browser-Only · Zero PHI at Rest · Zero Servers</span>
+      </div>
+      <h1>The <em>GDPR-proof</em> way to send a medical form.</h1>
+      <p class="lede">Patient intake with <strong>nothing to breach</strong>. No server. No database. No third-party processor. Answers travel directly browser-to-browser over an end-to-end encrypted, peer-to-peer channel — and vanish when you close the tab.</p>
+      <div class="hero-cta">
+        <a class="primary big" href="/builder.html">Build a form — free →</a>
+      </div>
+      <p class="micro">No account. No DPA needed. Works in any modern browser.</p>
+    </section>
+
+    <section class="gdpr-pillars">
+      <h2 class="visually-hidden">GDPR by architecture</h2>
+      <div class="pillar-grid">
+        <div class="pillar">
+          <div class="pillar-num">0</div>
+          <div class="pillar-label">Servers</div>
+          <p>Nothing of yours runs on our infrastructure — because there is no infrastructure.</p>
+        </div>
+        <div class="pillar">
+          <div class="pillar-num">0</div>
+          <div class="pillar-label">PHI at rest</div>
+          <p>Patient data exists only in the two browser tabs during the session. Close the tab, it's gone.</p>
+        </div>
+        <div class="pillar">
+          <div class="pillar-num">0</div>
+          <div class="pillar-label">Processors</div>
+          <p>No backend, no logging, no email server. Patient data never touches a third party.</p>
+        </div>
+        <div class="pillar">
+          <div class="pillar-num">100<span class="pct">%</span></div>
+          <div class="pillar-label">In your browser</div>
+          <p>The whole app is HTML, CSS, and JavaScript — auditable in your browser. No hidden backend, nothing phoning home.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="how" class="how">
+      <h2>How it works</h2>
+      <ol class="how-steps">
+        <li>
+          <h3>1. Build the form</h3>
+          <p>Add the questions you need — text, choices, dates, sections. Live preview as you build. Nothing is saved on a server.</p>
+        </li>
+        <li>
+          <h3>2. Share two things, two ways</h3>
+          <p>Send your patient the <strong>link</strong> by email. Send the <strong>passphrase</strong> by SMS or phone. That two-channel split is the actual security property.</p>
+        </li>
+        <li>
+          <h3>3. Patient fills, you receive</h3>
+          <p>Their browser connects directly to yours. Answers appear in your tab live as they type. Save locally if you want a copy.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section id="why" class="why">
+      <h2>Why it's GDPR-proof <span class="muted-h2">(and not just "GDPR-friendly")</span></h2>
+      <p class="why-lede">Most "GDPR-compliant" form tools still store your patient's data on their servers and ask you to sign a Data Processing Agreement. ProxForm <strong>removes the entire risk surface</strong> instead of papering over it.</p>
+      <ul class="why-list">
+        <li><strong>No data at rest.</strong> Nothing is stored on any ProxForm server, because there is no ProxForm server. Article 32 risk assessment: trivial.</li>
+        <li><strong>End-to-end encryption.</strong> PBKDF2 (100k iters) + AES-256-GCM on the handshake. DTLS 1.3 on the data channel itself.</li>
+        <li><strong>Two-channel sharing.</strong> The link and the passphrase travel through different channels. Compromising one isn't enough.</li>
+        <li><strong>Session verification (SAS).</strong> Both screens show a matching short code — read it aloud to confirm there's no person-in-the-middle.</li>
+        <li><strong>No accounts, no cookies, no analytics.</strong> No third-party processors to declare under Article 30.</li>
+        <li><strong>Auditable.</strong> Every line of crypto and protocol code runs in your browser — inspect it, verify it. No black boxes, no obfuscation.</li>
+      </ul>
+    </section>
+
+    <section id="faq" class="faq">
+      <h2>Frequently asked questions</h2>
+      <details>
+        <summary>Is ProxForm GDPR-compliant?</summary>
+        <p>ProxForm is <strong>GDPR-proof by architecture</strong>: no server-side storage of patient data, no third-party processors, no PHI at rest. The clinician remains the data controller for any local copies they choose to save — but ProxForm itself eliminates the data-at-rest, processor-relationship, and transit-encryption risk surfaces that drive most GDPR exposure.</p>
+      </details>
+      <details>
+        <summary>Do I need a Data Processing Agreement (DPA)?</summary>
+        <p>No. ProxForm never receives or processes patient data — answers travel directly browser-to-browser over an end-to-end encrypted WebRTC channel. There's no processor relationship to formalize because there is no processor.</p>
+      </details>
+      <details>
+        <summary>Where is patient data stored?</summary>
+        <p>Nowhere by default. Answers exist only in the two open browser tabs during the session. The clinician can choose to save a local copy (JSON or printed PDF) on their own device — that copy is then their responsibility under their own legal basis.</p>
+      </details>
+      <details>
+        <summary>How is the connection encrypted?</summary>
+        <p>PBKDF2 (100,000 iterations, SHA-256) derives a key from the shared passphrase, which encrypts the WebRTC handshake metadata with AES-256-GCM. The data channel itself runs over DTLS 1.3. A short verification code (SAS) lets both sides confirm there's no person-in-the-middle.</p>
+      </details>
+      <details>
+        <summary>What about HIPAA?</summary>
+        <p>ProxForm is designed around GDPR principles. HIPAA is a separate US framework with its own requirements (BAAs, audit logs). The same zero-data-at-rest architecture is favorable under HIPAA, but we do not market ProxForm as a HIPAA-compliant solution.</p>
+      </details>
+      <details>
+        <summary>Does ProxForm cost anything?</summary>
+        <p>ProxForm runs entirely in your browser with no accounts and no analytics. Pricing for clinical use will be announced — early users can contact Artivicolab for access.</p>
+      </details>
+    </section>
+
+    <section class="cta">
+      <h2>Try it now</h2>
+      <p>Open two browser windows, build a form in one, open the link in the other.</p>
+      <a class="primary big" href="/builder.html">Build a form — free →</a>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <p class="footer-tagline"><strong>Private by design.</strong> ProxForm is <em>GDPR-compliant by architecture</em> — your patient's answers travel browser-to-browser, end-to-end encrypted. Like a sheet of paper, not a database.</p>
+      <nav class="footer-nav">
+        <a href="/#how">How it works</a>
+        <a href="/#why">Why GDPR-proof</a>
+        <a href="/#faq">FAQ</a>
+        <button id="contact-btn" type="button" class="link-btn">Contact us</button>
+      </nav>
+      <p class="footer-attribution">
+        ProxForm by <a href="https://artivicolab.com" target="_blank" rel="noopener">Artivicolab</a>
+        · Auditable · No accounts · No PHI at rest
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

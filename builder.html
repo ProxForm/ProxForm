@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Build a form — ProxForm</title>
+  <meta name="description" content="Build a GDPR-proof medical intake form and share it with your patient via an encrypted peer-to-peer link.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/icons/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css?v=5">
+  <script src="/js/theme.js?v=5" defer></script>
+  <script src="/js/storage.js?v=5" defer></script>
+  <script src="/js/netcheck.js?v=5" defer></script>
+  <script src="/js/crypto.js?v=5" defer></script>
+  <script src="/js/p2p.js?v=5" defer></script>
+  <script src="/js/render.js?v=5" defer></script>
+  <script src="/js/builder.js?v=5" defer></script>
+  <script src="/js/footer.js?v=5" defer></script>
+  <script src="/js/analytics.js?v=5" defer></script>
+</head>
+<body class="app-page builder-page">
+  <header class="topbar">
+    <a class="brand" href="/">ProxForm</a>
+    <div class="topbar-actions">
+      <span id="net-status" class="net-status net-checking" title="Checking outbound connectivity to STUN…">Checking…</span>
+      <span id="conn-status" class="conn-status">Not connected</span>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+
+    <!-- Step 1: build the form -->
+    <section id="step-build" class="step">
+      <h1>Build the form</h1>
+      <p class="muted">Add the questions you want your patient to answer. Nothing is saved on a server — this lives in your browser only.</p>
+
+      <div class="builder-layout">
+        <div class="builder-edit">
+          <div class="form-meta">
+            <label>
+              <span>Form title</span>
+              <input id="form-title" type="text" placeholder="e.g. Pre-appointment intake">
+            </label>
+            <label>
+              <span>Short description (optional)</span>
+              <textarea id="form-desc" rows="2" placeholder="e.g. Please fill this before your visit on Tuesday."></textarea>
+            </label>
+          </div>
+
+          <div id="fields-list" class="fields-list" aria-live="polite"></div>
+
+          <div class="add-field">
+            <span class="muted">Add:</span>
+            <button class="chip chip-section" data-add="section">＋ Section header</button>
+            <button class="chip" data-add="text">Short text</button>
+            <button class="chip" data-add="textarea">Long text</button>
+            <button class="chip" data-add="number">Number</button>
+            <button class="chip" data-add="date">Date</button>
+            <button class="chip" data-add="radio">Single choice</button>
+            <button class="chip" data-add="checkbox">Multi choice</button>
+            <button class="chip" data-add="yesno">Yes / No</button>
+          </div>
+
+          <div class="actions">
+            <button id="btn-generate" class="primary">Generate link →</button>
+            <button id="btn-clear-draft" class="secondary" type="button">Clear draft</button>
+          </div>
+        </div>
+
+        <aside class="builder-preview" aria-label="Live preview">
+          <div class="preview-head">
+            <h2>Preview</h2>
+            <div class="preview-head-actions">
+              <span class="muted preview-tag">What your patient will see</span>
+              <button id="btn-print-preview" class="secondary" type="button" title="Print or save as PDF">Print / PDF</button>
+            </div>
+          </div>
+          <div class="preview-frame">
+            <h3 id="preview-title" class="preview-title muted">Untitled form</h3>
+            <p id="preview-desc" class="preview-desc muted hidden"></p>
+            <div id="form-preview" class="patient-form preview-empty">
+              <p class="empty">Add a section or question on the left to see a preview here.</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Step 2: link + passphrase generated, waiting for patient's reply -->
+    <section id="step-share" class="step hidden">
+      <h1>Share with your patient</h1>
+      <p class="muted">Send the <strong>link</strong> through one channel (email) and the <strong>passphrase</strong> through a different channel (SMS, phone). That two-channel split is what keeps it secure.</p>
+
+      <label class="readonly-field">
+        <span>Patient link</span>
+        <div class="copy-row">
+          <input id="invite-url" type="text" readonly>
+          <button id="copy-url" class="secondary">Copy</button>
+        </div>
+      </label>
+
+      <label class="readonly-field">
+        <span>Passphrase</span>
+        <div class="copy-row">
+          <input id="invite-pass" type="text" readonly>
+          <button id="copy-pass" class="secondary">Copy</button>
+        </div>
+      </label>
+
+      <h2>Waiting for the patient's reply</h2>
+      <p class="muted">When your patient opens the link and enters the passphrase, their browser will produce a reply link. Paste it here:</p>
+
+      <label class="readonly-field">
+        <span>Reply link from patient</span>
+        <textarea id="reply-paste" rows="3" placeholder="Paste the reply link they sent you"></textarea>
+      </label>
+
+      <div class="actions">
+        <button id="btn-connect" class="primary">Connect →</button>
+      </div>
+    </section>
+
+    <!-- Step 3: connected — live view of patient's answers -->
+    <section id="step-live" class="step hidden">
+      <div class="live-header">
+        <h1 id="live-title">Patient is filling the form</h1>
+        <div id="session-code" class="session-code" title="Read this out loud to your patient — both screens must show the same code."></div>
+      </div>
+      <p class="muted">Answers update live as the patient types. Nothing is saved anywhere except your browser tab.</p>
+
+      <div id="answers-live" class="answers-live"></div>
+
+      <div class="actions">
+        <button id="btn-download" class="primary" disabled>Download answers (JSON)</button>
+        <button id="btn-print" class="secondary" disabled>Print / Save as PDF</button>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <p class="footer-tagline"><strong>Private by design.</strong> ProxForm is <em>GDPR-compliant by architecture</em> — answers travel browser-to-browser, end-to-end encrypted. Like a sheet of paper, not a database.</p>
+      <nav class="footer-nav">
+        <a href="/#how">How it works</a>
+        <a href="/#why">Why GDPR-proof</a>
+        <a href="/#faq">FAQ</a>
+        <button id="contact-btn" type="button" class="link-btn">Contact us</button>
+      </nav>
+      <p class="footer-attribution">
+        ProxForm by <a href="https://artivicolab.com" target="_blank" rel="noopener">Artivicolab</a>
+        · Auditable · No accounts · No PHI at rest
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

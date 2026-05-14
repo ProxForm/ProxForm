@@ -1,0 +1,13 @@
+{
+  "name": "ProxForm — GDPR-proof medical forms",
+  "short_name": "ProxForm",
+  "description": "Send patients a peer-to-peer encrypted medical form. No server, no PHI at rest.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8faf9",
+  "theme_color": "#0a7f5f",
+  "icons": [
+    { "src": "/icons/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
