@@ -44,10 +44,35 @@ function fieldCell(f, opts) {
                     : defStr.toLowerCase() === 'no'  ? 'no'
                     : null;
 
+  // For plain `text` fields, sniff the label for "email" / "phone" / "url"
+  // and switch to the matching HTML5 input type. Browsers then do the real
+  // validation work (red border on bad email, numeric keypad on mobile for
+  // phone, etc.) without forms having to declare custom types in the
+  // schema. Authors who want explicit control still set `validation.pattern`
+  // in the form definition.
+  const labelLower = String(f.label || '').toLowerCase();
+  let textInputType = 'text';
+  let inputModeAttr = '';
+  let extraPatternAttr = '';
+  if (f.type === 'text' && !v.pattern) {
+    if (/\b(e[\-\s]?mail|courriel)\b/.test(labelLower)) {
+      textInputType = 'email';
+    } else if (/\b(phone|tel|mobile|cell|téléphone|telephone)\b/.test(labelLower)) {
+      textInputType = 'tel';
+      inputModeAttr = ' inputmode="tel"';
+      // Permissive phone pattern: 7+ digits, plus optional +, spaces, dashes,
+      // parens. Rejects obviously-not-a-number values like "hello".
+      extraPatternAttr = ' pattern="[\\+\\d][\\d\\s\\-\\(\\)]{6,}"';
+    } else if (/\b(url|website|site\s*web)\b/.test(labelLower)) {
+      textInputType = 'url';
+      inputModeAttr = ' inputmode="url"';
+    }
+  }
+
   let body = '';
   if (f.type === 'text') {
     const val = defStr ? ` value="${_esc(defStr)}"` : '';
-    body = `<input type="text" data-field="${f.id}" data-type="text"${val}${minLenAttr}${maxLenAttr}${patternAttr}${validityTitle}${req}${disabled}>`;
+    body = `<input type="${textInputType}" data-field="${f.id}" data-type="text"${inputModeAttr}${val}${minLenAttr}${maxLenAttr}${patternAttr}${extraPatternAttr}${validityTitle}${req}${disabled}>`;
   } else if (f.type === 'textarea') {
     body = `<textarea data-field="${f.id}" data-type="textarea" rows="3"${minLenAttr}${maxLenAttr}${req}${disabled}>${_esc(defStr)}</textarea>`;
   } else if (f.type === 'number') {

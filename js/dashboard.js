@@ -43,6 +43,7 @@
       case 'disconnected': return 'Disconnected';
       case 'submitted':    return 'Submitted ✓';
       case 'closed':       return 'Ended';
+      case 'dormant':      return 'Survived reload — Reopen to share';
       default:             return state || '';
     }
   }
@@ -88,7 +89,13 @@
     const sas = s.sas ? `🔐 ${escapeHtml(s.sas)}` : '';
     const created = fmtTime(s.createdAt);
 
-    const linkRow = (s.state === 'waiting' || s.state === 'disconnected')
+    const linkRow = (s.state === 'dormant')
+      ? `<p class="muted small">This session was active when the tab reloaded. The old invite link is no longer usable — anyone who has it gets nothing. Click <em>Reopen</em> to mint a fresh link and passphrase to reshare with the patient.</p>
+         <div class="card-actions">
+           <button class="primary"   type="button" data-act="reopen">Reopen — new link & passphrase</button>
+           <button class="secondary" type="button" data-act="end">Discard</button>
+         </div>`
+      : (s.state === 'waiting' || s.state === 'disconnected')
       ? `<label class="readonly-field">
            <span>Invite link</span>
            <div class="copy-row">
@@ -259,30 +266,34 @@
       ProxSessions.connect(sessionId, text).catch(() => toast('Could not decrypt the reply — passphrase mismatch or wrong link'));
     } else if (act === 'reconnect') {
       ProxSessions.reconnect(sessionId).then(() => toast('New portal generated — share the new link + passphrase')).catch(() => toast('Could not generate a new portal'));
+    } else if (act === 'reopen') {
+      ProxSessions.reopenDormant(sessionId)
+        .then(() => toast('Fresh portal minted — copy the new link and passphrase, share them with the patient'))
+        .catch(() => toast('Could not reopen this session'));
     } else if (act === 'end') {
       if (s.state === 'connected' || s.state === 'connecting') {
-        if (!confirm('End this session? The patient will lose their connection.')) return;
+        ProxConfirm('The patient will lose their connection immediately. Any answers they haven\'t submitted are gone.', {
+          title: 'End session?',
+          confirmText: 'End',
+          danger: true
+        }).then(ok => { if (ok) ProxSessions.end(sessionId); });
+        return;
       }
       ProxSessions.end(sessionId);
     } else if (act === 'open-sub') {
-      // The "Open submission" anchor jumps to the submission detail view.
-      // Find the latest submission with this sessionId's formId/title — for
-      // simplicity, we use receivedAt > session.submittedAt heuristic.
-      // In the SPA the submission view lives at #/submission/<id>; the
-      // legacy URL still works on standalone pages.
-      (async () => {
-        try {
-          const subs = await ProxStore.listSubmissions();
-          const match = subs.find(x => x.receivedAt >= (s.submittedAt || 0) && x.formId === s.formId);
-          if (!match) { toast('Submission record not found yet'); return; }
-          if (window.ProxRouter) ProxRouter.go('submission', match.id);
-          else location.href = '/builder.html?submission=' + encodeURIComponent(match.id);
-        } catch (_) { toast('Could not open submission'); }
-      })();
+      // handleSubmit() stamps s.submissionId on the in-memory session record
+      // as soon as the submission lands in IndexedDB. Use that directly — no
+      // time-window heuristic that could miss when formId is null on both
+      // sides or when receivedAt nudges past the submittedAt window.
+      const id = s.submissionId;
+      if (!id) { toast('Submission record not ready yet'); return; }
+      if (window.ProxRouter) ProxRouter.go('submission', id);
+      else location.href = '/builder.html?submission=' + encodeURIComponent(id);
     }
   }
 
   // ── "Send new invite" ─────────────────────────────────────────────────
+  // Auto-labeling (DMV ticket: 1A, 1B, ...) lives in ProxSessions.create.
 
   async function onSend() {
     const sel = document.getElementById('dash-form-select');
@@ -296,14 +307,18 @@
       return;
     }
     const snap = { title: form.title || 'Untitled form', description: form.description || '', numbered: !!form.numbered, fields: form.fields };
+    // Typed label wins; empty label means ProxSessions auto-assigns the next
+    // ticket. Either way the counter only advances when an auto label is
+    // actually emitted (handled inside ProxSessions.create).
+    const typedLabel = (lblInp && lblInp.value.trim()) || '';
     try {
-      await ProxSessions.create({
+      const session = await ProxSessions.create({
         formSnapshot: snap,
         formId: form.id,
-        label: (lblInp && lblInp.value.trim()) || ''
+        label: typedLabel
       });
       if (lblInp) lblInp.value = '';
-      toast('Invite created — copy the link & passphrase, share them on different channels');
+      toast('Invite ' + session.label + ' created — copy the link & passphrase, share them on different channels');
     } catch (_) {
       toast('Could not create invite');
     }
@@ -366,11 +381,50 @@
     ProxSessions.on('closed', ifMounted(() => renderActive()));
   }
 
+  async function onEndShift() {
+    const ok = await ProxConfirm(
+      'This deletes every patient submission, active invite, dormant session, and draft on THIS device. Form templates and your theme/shield settings stay. Use at the end of a shift so the next person starts clean.',
+      { title: 'End shift?', confirmText: 'Wipe patient data', danger: true }
+    );
+    if (!ok) return;
+    try {
+      // Tear down every live session first so RTCPeerConnections close cleanly.
+      for (const s of ProxSessions.list()) {
+        try { ProxSessions.end(s.id); } catch (_) {}
+      }
+      // Nuke each store in one transaction per store. Forms are preserved on
+      // purpose — those are clinic templates, not patient data.
+      await ProxStore.clearStore('submissions');
+      await ProxStore.clearStore('pending_sessions');
+      await ProxStore.clearStore('fill_drafts');
+      await ProxStore.clearStore('builder_drafts');
+      // Ticket counter resets so the next shift starts at 1A.
+      try { localStorage.removeItem('proxform_label_counter'); } catch (_) {}
+      toast('Shift ended — device is clean. Ready for the next person.');
+      renderActive();
+      if (typeof window.renderSubmissions === 'function') {
+        try { await window.renderSubmissions(); } catch (_) {}
+      }
+    } catch (e) {
+      toast('Could not finish wipe: ' + (e.message || e));
+    }
+  }
+
   async function mount() {
     if (!window.ProxSessions) return;
     subscribeOnce();
+    // Rehydrate any invites that were live when the tab last unloaded. They
+    // come back in 'dormant' state — old links are dead, clinician clicks
+    // Reopen to mint a fresh portal under the same sessionId.
+    try { await ProxSessions.restoreDormant(); } catch (_) {}
+    // Sync the ticket counter against what's already in IndexedDB so we
+    // never hand out a label that collides with a saved submission or a
+    // dormant session. First load on a fresh device → counter stays 0 → next
+    // ticket is 1A.
+    try { await ProxSessions.reconcileLabelCounter(); } catch (_) {}
     await populateFormPicker();
     document.getElementById('dash-send')?.addEventListener('click', onSend);
+    document.getElementById('btn-end-shift')?.addEventListener('click', onEndShift);
     document.addEventListener('click', onClick);
     document.addEventListener('visibilitychange', onVisibilityChange);
     renderActive();

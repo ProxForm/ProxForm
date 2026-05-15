@@ -19,7 +19,10 @@
     build:      { src: '/builder.html',  view: () => window.ProxBuilderView  },
     forms:      { src: '/forms.html',    view: () => window.ProxFormsView    },
     import:     { src: '/import.html',   view: () => window.ProxImportView   },
-    submission: { src: '/builder.html',  view: () => window.ProxSubmissionView }
+    submission: { src: '/builder.html',  view: () => window.ProxSubmissionView },
+    // Static content views — no JS interaction needed, just the fragment.
+    home:       { src: '/index.html',    view: () => null },
+    gdpr:       { src: '/gdpr.html',     view: () => null }
   };
 
   const DEFAULT_ROUTE = 'received';
@@ -55,11 +58,29 @@
     return fragmentCache[routeName];
   }
 
+  // Each route maps to a body class so per-view CSS (e.g. the wide builder
+  // layout in css/style.css `body.app-page.builder-page .app-main`) still
+  // applies. The router toggles these classes on body during navigation so
+  // legacy stylesheets keep working without per-view rewrites.
+  const PAGE_BODY_CLASSES = {
+    received:   'received-page',
+    build:      'builder-page',
+    submission: 'builder-page',
+    forms:      'forms-page',
+    import:     'import-page',
+    home:       'home-page',
+    gdpr:       'home-page'
+  };
+  const ALL_PAGE_CLASSES = ['received-page', 'builder-page', 'forms-page', 'import-page', 'home-page'];
+
   function updateActiveNav(routeName) {
     document.querySelectorAll('.topnav a[data-route]').forEach(a => {
       a.classList.toggle('active', a.dataset.route === routeName);
     });
     document.body.dataset.page = routeName;
+    ALL_PAGE_CLASSES.forEach(c => document.body.classList.remove(c));
+    const cls = PAGE_BODY_CLASSES[routeName];
+    if (cls) document.body.classList.add(cls);
   }
 
   async function navigate() {

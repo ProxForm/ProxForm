@@ -179,9 +179,13 @@
         <h1 id="sub-title">Submission</h1>
         <div id="sub-id-badge" class="session-code" title="Submission ID"></div>
       </div>
-      <p class="muted">Received <span id="sub-received"></span></p>
+      <p class="muted">
+        <strong>From:</strong> <span id="sub-sender" class="sub-sender">(no label)</span>
+        <span class="muted small"> · Received <span id="sub-received"></span></span>
+      </p>
 
-      <div id="sub-view" class="patient-form preview-form"></div>
+      <div id="sub-shield-picker" class="sub-shield-picker"></div>
+      <div id="sub-view" class="patient-form preview-form" data-shield-host></div>
 
       <div class="actions">
         <button id="btn-sub-export" class="primary" type="button">Export JSON</button>

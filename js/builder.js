@@ -1106,8 +1106,8 @@ async function generateLink() {
   try {
     session = await ProxSessions.create({
       formSnapshot: buildFormSnapshot(),
-      formId: currentFormId,
-      label: title
+      formId: currentFormId
+      // No label → ProxSessions auto-assigns the next ticket (1A, 1B, ...).
     });
   } catch (_) {
     toast('Could not start session');
@@ -1115,7 +1115,7 @@ async function generateLink() {
   }
 
   navigator.clipboard?.writeText(session.inviteUrl).then(
-    () => toast('Invite created — link copied. Open Inbox to send the passphrase and watch for the reply.'),
+    () => toast('Invite created — link copied. Open the Portal to send the passphrase and watch for the reply.'),
     () => toast('Invite created — open Inbox to copy the link & passphrase.')
   );
 
@@ -1133,30 +1133,44 @@ async function generateLink() {
 // <input> elements — fields are rendered as labels + underline lines or
 // checkbox marks so the output is consistent across browsers and easy to
 // fill in by hand.
-function paperFieldHtml(f) {
-  const def = f.default;
-  const defStr = def != null && !Array.isArray(def) ? String(def) : '';
-  const defSet = Array.isArray(def) ? new Set(def.map(String)) : null;
-  const yesno  = defStr.toLowerCase() === 'yes' ? 'yes'
-              :  defStr.toLowerCase() === 'no'  ? 'no'
-              :  null;
+// When `value` is provided the field renders the patient's submitted answer
+// instead of the field's blank/default. This is how the submission Print/PDF
+// path reuses the same paper rendering the builder preview produces.
+function paperFieldHtml(f, value) {
+  const useAnswer = value !== undefined;
+  const raw = useAnswer ? value : f.default;
+  const rawStr = raw != null && !Array.isArray(raw) ? String(raw) : '';
+  const rawSet = Array.isArray(raw) ? new Set(raw.map(String)) : null;
+  const yesno  = useAnswer
+    ? (raw === true || rawStr.toLowerCase() === 'yes' ? 'yes' : raw === false || rawStr.toLowerCase() === 'no' ? 'no' : null)
+    : (rawStr.toLowerCase() === 'yes' ? 'yes' : rawStr.toLowerCase() === 'no' ? 'no' : null);
 
   if (f.type === 'text' || f.type === 'number') {
-    return defStr
-      ? `<div class="paper-line filled">${escapeHtml(defStr)}</div>`
+    return rawStr
+      ? `<div class="paper-line filled">${escapeHtml(rawStr)}</div>`
       : `<div class="paper-line"></div>`;
   }
   if (f.type === 'date') {
-    return defStr
-      ? `<div class="paper-line filled">${escapeHtml(defStr)}</div>`
+    return rawStr
+      ? `<div class="paper-line filled">${escapeHtml(rawStr)}</div>`
       : `<div class="paper-line paper-date"><span>D D</span> / <span>M M</span> / <span>Y Y Y Y</span></div>`;
   }
   if (f.type === 'textarea') {
-    if (defStr) return `<div class="paper-block filled">${escapeHtml(defStr)}</div>`;
+    if (rawStr) return `<div class="paper-block filled">${escapeHtml(rawStr)}</div>`;
     return `<div class="paper-line"></div><div class="paper-line"></div><div class="paper-line"></div>`;
   }
-  if (f.type === 'file') {
-    return `<div class="paper-block" style="min-height:2.4em;display:flex;align-items:center;color:#777;font-style:italic;">[ attach file / photo ]</div>`;
+  if (f.type === 'file' || f.type === 'signature') {
+    // For submissions: if the patient attached something, render it inline so
+    // it lands on the printed page. For empty / preview: show a placeholder.
+    if (raw && typeof raw === 'object' && raw.data) {
+      const mime = raw.mime || 'application/octet-stream';
+      const dataUrl = 'data:' + mime + ';base64,' + raw.data;
+      if (mime.startsWith('image/')) {
+        return `<div class="paper-block filled"><img src="${dataUrl}" alt="${escapeHtml(raw.name || 'attachment')}" style="max-width:100%;max-height:240px;"></div>`;
+      }
+      return `<div class="paper-block filled">📎 ${escapeHtml(raw.name || 'attachment')}</div>`;
+    }
+    return `<div class="paper-block" style="min-height:2.4em;display:flex;align-items:center;color:#777;font-style:italic;">[ ${f.type === 'signature' ? 'signature' : 'attach file / photo'} ]</div>`;
   }
   if (f.type === 'yesno') {
     const yChecked = yesno === 'yes' ? 'checked' : '';
@@ -1169,8 +1183,8 @@ function paperFieldHtml(f) {
   if (f.type === 'radio' || f.type === 'checkbox') {
     const opts = Array.isArray(f.options) ? f.options : [];
     const checkedFor = (opt) => {
-      if (f.type === 'radio')    return defStr === String(opt) ? 'checked' : '';
-      if (f.type === 'checkbox') return defSet && defSet.has(String(opt)) ? 'checked' : '';
+      if (f.type === 'radio')    return rawStr === String(opt) ? 'checked' : '';
+      if (f.type === 'checkbox') return rawSet && rawSet.has(String(opt)) ? 'checked' : '';
       return '';
     };
     return `<div class="paper-choices">
@@ -1180,7 +1194,9 @@ function paperFieldHtml(f) {
   return '';
 }
 
-function buildPaperForm(snap) {
+function buildPaperForm(snap, opts) {
+  const answers = (opts && opts.answers) || null;
+  const senderLabel = (opts && opts.senderLabel) || '';
   const title = (snap.title || 'Untitled form').trim();
   const desc  = (snap.description || '').trim();
   const fields = Array.isArray(snap.fields) ? snap.fields : [];
@@ -1221,7 +1237,7 @@ function buildPaperForm(snap) {
       <div class="paper-cell ${colClass(f.column)}">
         <div class="paper-label">${numPrefix}${escapeHtml(f.label || '(untitled question)')}${reqStar}</div>
         ${hint}
-        ${paperFieldHtml(f)}
+        ${paperFieldHtml(f, answers ? answers[f.id] : undefined)}
       </div>
     `;
     const cap = capacity(f.column);
@@ -1241,6 +1257,7 @@ function buildPaperForm(snap) {
   return `
     <h1 class="paper-title">${escapeHtml(title)}</h1>
     ${desc ? `<p class="paper-desc">${escapeHtml(desc)}</p>` : ''}
+    ${senderLabel ? `<p class="paper-sender"><strong>From:</strong> ${escapeHtml(senderLabel)}</p>` : ''}
     <div class="paper-form">${body}</div>
   `;
 }
@@ -1337,7 +1354,33 @@ async function loadSubmissionView(id) {
 
   document.getElementById('sub-title').textContent     = sub.formTitle || 'Submission';
   document.getElementById('sub-id-badge').textContent  = '#' + shortId(sub.id);
-  document.getElementById('sub-received').textContent  = fmtDateTime(sub.receivedAt);
+  const recvEl = document.getElementById('sub-received');
+  if (recvEl) {
+    // Show elapsed time prominently with the absolute date in the title for
+    // hover. The DOM mutation observer / interval tick below refreshes the
+    // text periodically without re-rendering the whole submission.
+    recvEl.innerHTML = '<strong class="elapsed" data-elapsed="' + sub.receivedAt + '">' +
+      escapeHtml(fmtElapsed(sub.receivedAt)) + '</strong> <span class="muted">· ' +
+      escapeHtml(fmtDateTime(sub.receivedAt)) + '</span>';
+  }
+
+  // Surface the patient's name (extracted from a name field in the answers)
+  // alongside the ticket label. Name field missing → fall back to the ticket
+  // alone → finally "(no label)" if neither.
+  const senderEl = document.getElementById('sub-sender');
+  if (senderEl) {
+    const name = extractSenderName(sub.formSnapshot, sub.answers);
+    if (name) {
+      senderEl.innerHTML = escapeHtml(name) + ' <span class="muted">· #' + escapeHtml(sub.senderLabel || shortId(sub.id)) + '</span>';
+      senderEl.classList.remove('muted');
+    } else if (sub.senderLabel) {
+      senderEl.textContent = sub.senderLabel;
+      senderEl.classList.remove('muted');
+    } else {
+      senderEl.textContent = '(no label)';
+      senderEl.classList.add('muted');
+    }
+  }
 
   const root = document.getElementById('sub-view');
   const fieldsArr = (sub.formSnapshot && sub.formSnapshot.fields) || [];
@@ -1357,6 +1400,16 @@ async function loadSubmissionView(id) {
     }, { numbered: !!(sub.formSnapshot && sub.formSnapshot.numbered) });
   }
 
+  // Privacy shield: render the per-clinic timeout picker and attach the
+  // idle watcher to the answer container. Re-rendering the submission (e.g.
+  // after the user navigates away and back) tears down any prior shield
+  // controller through .stop().
+  if (window.ProxShield) {
+    if (root && root._proxShield) root._proxShield.stop();
+    ProxShield.buildPicker(document.getElementById('sub-shield-picker'));
+    if (root) ProxShield.attach(root);
+  }
+
   document.getElementById('btn-sub-export').onclick = () => {
     const blob = new Blob([JSON.stringify(sub, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -1366,14 +1419,48 @@ async function loadSubmissionView(id) {
     URL.revokeObjectURL(a.href);
   };
   document.getElementById('btn-sub-print').onclick = () => {
+    // Same paper-print pipeline the builder preview uses: build a static
+    // paper-style HTML version of the form with the patient's answers filled
+    // in, drop it into #print-container, toggle the print-only body class,
+    // print, restore. No real <input> elements means browsers can't disagree
+    // on rendering, so the resulting PDF is consistent everywhere.
+    const originalTitle = document.title;
+    const snap = sub.formSnapshot || { title: sub.formTitle, fields: [] };
+    if (sub.formTitle) document.title = sub.formTitle;
+
+    document.getElementById('print-container')?.remove();
+    const printRoot = document.createElement('div');
+    printRoot.id = 'print-container';
+    // The PDF "From:" line mirrors the on-screen submission detail: patient
+    // name (if a name field exists) followed by the ticket. Falls back to
+    // just the ticket when the form is anonymous.
+    const printName = extractSenderName(sub.formSnapshot, sub.answers);
+    const printSender = printName
+      ? printName + ' · #' + (sub.senderLabel || shortId(sub.id))
+      : (sub.senderLabel || '');
+    printRoot.innerHTML = buildPaperForm(snap, {
+      answers:     sub.answers || {},
+      senderLabel: printSender
+    });
+    document.body.appendChild(printRoot);
     document.body.classList.add('printing-preview');
-    const restore = () => document.body.classList.remove('printing-preview');
+
+    const restore = () => {
+      document.body.classList.remove('printing-preview');
+      document.getElementById('print-container')?.remove();
+      document.title = originalTitle;
+    };
     window.addEventListener('afterprint', restore, { once: true });
     window.print();
     setTimeout(restore, 1500);
   };
   document.getElementById('btn-sub-delete').onclick = async () => {
-    if (!confirm('Delete this submission permanently?')) return;
+    const ok = await ProxConfirm('This deletes the submission permanently from this device. There is no server copy — once gone, gone.', {
+      title: 'Delete submission?',
+      confirmText: 'Delete',
+      danger: true
+    });
+    if (!ok) return;
     try { await ProxStore.deleteSubmission(sub.id); } catch (_) {}
     if (window.ProxRouter) ProxRouter.go('received');
     else location.replace('/received.html');
@@ -1403,9 +1490,84 @@ function fmtDateTime(ts) {
   return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+// Walk every `[data-elapsed]` element on the page and refresh its text from
+// the timestamp stored in the attribute. One global interval at module load
+// — cheap (a handful of nodes per dashboard) and avoids per-card timers
+// that would leak as cards mount/unmount.
+function refreshElapsedNodes() {
+  const nodes = document.querySelectorAll('[data-elapsed]');
+  if (!nodes.length) return;
+  for (const el of nodes) {
+    const ts = parseInt(el.dataset.elapsed, 10);
+    if (!Number.isFinite(ts)) continue;
+    el.textContent = fmtElapsed(ts);
+  }
+}
+if (typeof document !== 'undefined') {
+  setInterval(refreshElapsedNodes, 30 * 1000);
+}
+
+// Hospital staff care more about "how long since the patient submitted" than
+// the absolute timestamp. Format goes: "just now" → "5 min ago" → "2 hr ago"
+// → "3 d ago". Anything past 14 days falls back to the absolute date.
+function fmtElapsed(ts) {
+  if (!ts) return '';
+  const now = Date.now();
+  const diffMs = Math.max(0, now - ts);
+  const secs = Math.floor(diffMs / 1000);
+  if (secs < 30)    return 'just now';
+  if (secs < 60)    return secs + ' sec ago';
+  const mins = Math.floor(secs / 60);
+  if (mins < 60)    return mins + ' min ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24)     return hrs + ' hr ago';
+  const days = Math.floor(hrs / 24);
+  if (days < 14)    return days + ' d ago';
+  const d = new Date(ts);
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
 function shortId(id) {
   if (!id) return '';
   return id.replace(/^sub_/, '').replace(/-/g, '').slice(0, 8);
+}
+
+// Best-effort patient name extracted from the submitted answers. We look for
+// a text field whose label reads as a name field, prefer the most specific
+// match (full legal > full > generic 'name'), and fall back to first+last
+// pair if the form splits the name. Returns '' when nothing identifies.
+//
+// Forms without a name field stay anonymous — we never invent a name from
+// other text fields. The ticket label (senderLabel) still identifies the row.
+function extractSenderName(formSnapshot, answers) {
+  const fields = (formSnapshot && formSnapshot.fields) || [];
+  if (!Array.isArray(fields) || !fields.length || !answers) return '';
+
+  const PRIORITY_PATTERNS = [
+    /full\s*legal\s*name|legal\s*name/i,
+    /full\s*name|patient\s*name|client\s*name|your\s*name/i,
+    /\bname\b/i
+  ];
+  for (const pat of PRIORITY_PATTERNS) {
+    for (const f of fields) {
+      if (f.type !== 'text') continue;
+      if (!pat.test(String(f.label || ''))) continue;
+      const v = answers[f.id];
+      if (typeof v === 'string' && v.trim()) return v.trim();
+    }
+  }
+
+  // Composite name fallback: first + last / surname / family name.
+  let first = '', last = '';
+  for (const f of fields) {
+    if (f.type !== 'text') continue;
+    const lbl = String(f.label || '').toLowerCase();
+    const v = answers[f.id];
+    if (!(typeof v === 'string') || !v.trim()) continue;
+    if (!first && /\bfirst\s*name\b|\bgiven\s*name\b|\bprenom\b|\bprénom\b/.test(lbl)) first = v.trim();
+    else if (!last && /\b(last|family|sur)\s*name\b|\bsurname\b|\bnom\s*de\s*famille\b/.test(lbl)) last = v.trim();
+  }
+  return [first, last].filter(Boolean).join(' ');
 }
 
 async function renderSubmissions() {
@@ -1426,10 +1588,21 @@ async function renderSubmissions() {
       s.answers[f.id] !== undefined && s.answers[f.id] !== '' &&
       !(Array.isArray(s.answers[f.id]) && !s.answers[f.id].length)).length;
     const total = fields.filter(f => f.type !== 'section').length;
+    const senderName = extractSenderName(s.formSnapshot, s.answers);
+    const senderText = senderName
+      ? `${escapeHtml(senderName)} <span class="muted">· #${escapeHtml(s.senderLabel || shortId(s.id))}</span>`
+      : (s.senderLabel ? escapeHtml(s.senderLabel) : '');
+    const senderLine = senderText
+      ? `<div class="meta sub-sender"><strong>From:</strong> ${senderText}</div>`
+      : '';
     return `
       <div class="form-card submission-card" data-id="${escapeHtml(s.id)}">
         <h3>${escapeHtml(s.formTitle || 'Untitled form')}</h3>
-        <div class="meta">${answered}/${total} answered · received ${fmtDateTime(s.receivedAt)}</div>
+        ${senderLine}
+        <div class="meta">
+          <strong class="elapsed" data-elapsed="${s.receivedAt}">${escapeHtml(fmtElapsed(s.receivedAt))}</strong>
+          <span class="muted"> · ${answered}/${total} answered · received ${fmtDateTime(s.receivedAt)}</span>
+        </div>
         <div class="meta sub-id" title="Submission ID">#${escapeHtml(shortId(s.id))}</div>
         <div class="row">
           <a class="primary" href="${window.ProxRouter ? '#/submission/' + encodeURIComponent(s.id) : '/builder.html?submission=' + encodeURIComponent(s.id)}">View</a>
@@ -1446,7 +1619,12 @@ async function renderSubmissions() {
       const id  = btn.dataset.id;
       const act = btn.dataset.subAct;
       if (act === 'delete') {
-        if (!confirm('Delete this submission permanently? The patient cannot resend it.')) return;
+        const ok = await ProxConfirm('This deletes the submission permanently from this device. The patient cannot resend their answers.', {
+          title: 'Delete submission?',
+          confirmText: 'Delete',
+          danger: true
+        });
+        if (!ok) return;
         try { await ProxStore.deleteSubmission(id); } catch (_) {}
         renderSubmissions();
       } else if (act === 'export') {
@@ -1503,7 +1681,12 @@ async function renderFormsList() {
       const id  = btn.dataset.id;
       const act = btn.dataset.act;
       if (act === 'delete') {
-        if (!confirm('Delete this form? This cannot be undone.')) return;
+        const ok = await ProxConfirm('This deletes the form template from this device. Any active session that already shared it stays open, but you can no longer reopen this form from My forms.', {
+          title: 'Delete form?',
+          confirmText: 'Delete',
+          danger: true
+        });
+        if (!ok) return;
         try { await ProxStore.deleteForm(id); } catch (_) {}
         renderFormsList();
       } else if (act === 'duplicate') {
@@ -1670,8 +1853,13 @@ async function mountBuilderView(formId) {
     btn.addEventListener('click', () => addField(btn.dataset.add));
   });
   document.getElementById('btn-generate')?.addEventListener('click', generateLink);
-  document.getElementById('btn-clear-draft')?.addEventListener('click', () => {
-    if (confirm('Clear the current draft? This cannot be undone.')) clearDraft();
+  document.getElementById('btn-clear-draft')?.addEventListener('click', async () => {
+    const ok = await ProxConfirm('Wipes the title, description, and every question on this form. The form record itself stays in My forms — use Delete on the forms list to remove it entirely.', {
+      title: 'Clear this draft?',
+      confirmText: 'Clear',
+      danger: true
+    });
+    if (ok) clearDraft();
   });
   document.getElementById('btn-lock-reorder')?.addEventListener('click', toggleReorderLock);
   applyReorderLock();
@@ -1732,11 +1920,28 @@ async function mountBuilderView(formId) {
   currentFormId = formId || null;
 
   if (!currentFormId) {
-    // No formId → bounce to the forms list. The SPA router handles in-app
-    // navigation; legacy pages do a full redirect.
-    if (window.ProxRouter) ProxRouter.go('forms');
-    else location.replace('/forms.html');
-    return;
+    // No formId on /#build → create a fresh empty form and open it. This is
+    // what the topbar "Build" link expects: click → land directly in the
+    // editor, no detour through the forms list.
+    if (!storageOk) {
+      toast('Drafts disabled — cannot create a form');
+      return;
+    }
+    try {
+      const created = await ProxStore.createForm({ title: '', description: '', fields: [] });
+      // history.replaceState avoids pushing #/build onto the stack so Back
+      // doesn't dump the user on an unmounted blank-editor state.
+      if (window.ProxRouter) {
+        history.replaceState(null, '', '#/build/' + encodeURIComponent(created.id));
+        currentFormId = created.id;
+      } else {
+        location.replace('/builder.html?form=' + encodeURIComponent(created.id));
+        return;
+      }
+    } catch (e) {
+      toast('Could not create a new form: ' + (e.message || e));
+      return;
+    }
   }
 
   loadCollapsedState();
@@ -1766,7 +1971,10 @@ window.ProxFormsView = {
 };
 window.ProxSubmissionView = {
   mount(host, params) { return mountSubmissionView(params && params[0]); },
-  unmount() {}
+  unmount() {
+    const root = document.getElementById('sub-view');
+    if (root && root._proxShield) root._proxShield.stop();
+  }
 };
 
 // Legacy standalone-page bootstrap. The SPA shell sets data-page="app" and

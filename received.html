@@ -46,7 +46,10 @@
   <main class="app-main">
     <section class="step dash-section">
       <div class="dash-head">
-        <h1>Inbox</h1>
+        <h1>Portal</h1>
+        <div class="dash-head-actions">
+          <button id="btn-end-shift" class="secondary danger" type="button" title="Wipe every patient submission, active invite, and draft on this device. Form templates stay. Use at end of shift.">End shift — wipe patient data</button>
+        </div>
       </div>
       <p class="muted">Send a form to a patient and watch their reply land. Multiple sessions can run in parallel — each one is a card below. Nothing is on a server; everything lives in this tab until you close it (submissions persist on your device only).</p>
 
@@ -57,8 +60,8 @@
             <select id="dash-form-select" title="Pick a saved form to send. Build new forms in the My forms page."></select>
           </label>
           <label class="dash-sender-field">
-            <span>Label (optional, stays on your device)</span>
-            <input id="dash-label" type="text" placeholder="e.g. Mrs. Smith — Tuesday">
+            <span>Label (optional — auto-assigns 1A / 1B / 1C …)</span>
+            <input id="dash-label" type="text" placeholder="leave blank for next ticket number">
           </label>
           <button id="dash-send" class="primary" type="button" title="Encrypt the form and create a fresh invite link + passphrase. Share the link by one channel and the passphrase by another.">Send invite <span class="arrow">→</span></button>
         </div>
@@ -74,7 +77,7 @@
     </section>
 
     <section class="step dash-section">
-      <h2>Completed submissions <span class="muted small">(newest first)</span></h2>
+      <h2>Completed submissions <span class="muted small">(oldest first — next up at the top)</span></h2>
       <p class="muted">Submissions are stored on this device only. Clear your browser data and they're gone.</p>
       <div id="submissions-list" class="forms-list" aria-live="polite"></div>
     </section>

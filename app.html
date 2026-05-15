@@ -23,15 +23,20 @@
   <script src="/js/templates.js?v=11" defer></script>
   <script src="/js/builder.js?v=11" defer></script>
   <script src="/js/dashboard.js?v=11" defer></script>
+  <script src="/js/bg.js?v=11" defer></script>
+  <script src="/js/dialog.js?v=11" defer></script>
+  <script src="/js/shield.js?v=11" defer></script>
   <script src="/js/router.js?v=11" defer></script>
   <script src="/js/footer.js?v=11" defer></script>
   <script src="/js/analytics.js?v=11" defer></script>
 </head>
 <body class="app-page" data-page="app">
+  <div class="bg-mirror" aria-hidden="true"></div>
   <header class="topbar">
     <a class="brand" href="#/received">ProxForm</a>
     <nav class="topnav" aria-label="Primary navigation">
-      <a href="#/received" data-route="received">Inbox</a>
+      <a href="#/home" data-route="home" title="The ProxForm pitch and how-it-works (still inside the app — your sessions stay alive)">Home</a>
+      <a href="#/received" data-route="received">Portal</a>
       <a href="#/build"    data-route="build">Build</a>
       <a href="#/forms"    data-route="forms">My forms</a>
       <a href="#/import"   data-route="import">Import</a>

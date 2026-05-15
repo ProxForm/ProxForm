@@ -3,12 +3,17 @@
 // All data stays on the user's device. No network call from this module.
 
 const DB_NAME = 'proxform';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 // `forms` is the clinician's saved templates. `submissions` holds completed
 // answer-sets received from patients, persisted on the clinician's own device
 // so they survive a tab refresh. `builder_drafts` is kept for the legacy
 // single-draft path until the dashboard migrates it on first load.
-const STORES = ['builder_drafts', 'fill_drafts', 'forms', 'submissions'];
+// `pending_sessions` holds invite metadata for sessions that were active when
+// the tab unloaded — sessionId + formSnapshot + senderLabel + state, NEVER
+// the invite URL, passphrase, or any patient answers. The old WebRTC peer
+// connection is gone after reload, so any old invite link is dead; the
+// clinician has to Reopen to mint a fresh portal.
+const STORES = ['builder_drafts', 'fill_drafts', 'forms', 'submissions', 'pending_sessions'];
 
 let dbPromise = null;
 
@@ -49,6 +54,7 @@ function tx(store, mode, fn) {
 async function dbPut(store, key, value)   { return tx(store, 'readwrite', s => s.put(value, key)); }
 async function dbGet(store, key)          { return tx(store, 'readonly',  s => s.get(key)); }
 async function dbDelete(store, key)       { return tx(store, 'readwrite', s => s.delete(key)); }
+async function dbClear(store)             { return tx(store, 'readwrite', s => s.clear()); }
 
 function newFormId() {
   if (crypto && crypto.randomUUID) return crypto.randomUUID();
@@ -112,7 +118,9 @@ async function listSubmissions() {
     const t = db.transaction('submissions', 'readonly');
     const req = t.objectStore('submissions').getAll();
     req.onsuccess = () => {
-      const out = (req.result || []).slice().sort((a, b) => (b.receivedAt || 0) - (a.receivedAt || 0));
+      // First-come-first-serve — hospital queue ordering. Oldest at the top
+      // so the staff treats the front of the column as "next up".
+      const out = (req.result || []).slice().sort((a, b) => (a.receivedAt || 0) - (b.receivedAt || 0));
       resolve(out);
     };
     req.onerror = () => reject(req.error);
@@ -130,9 +138,46 @@ async function saveSubmission(record) {
     formTitle:    record.formTitle || (record.formSnapshot && record.formSnapshot.title) || 'Untitled form',
     formSnapshot: record.formSnapshot || null,
     answers:      record.answers || {},
+    senderLabel:  record.senderLabel || '',
     receivedAt:   record.receivedAt || Date.now()
   };
   await dbPut('submissions', id, stored);
+  return stored;
+}
+
+// ── Pending sessions (survive reload) ───────────────────────────────────
+// Persisted ONLY: sessionId, formSnapshot, formId, senderLabel, state,
+// createdAt. NEVER the invite URL or passphrase — those die with the in-
+// memory RTCPeerConnection. On reload, ProxSessions reads these and shows
+// dormant cards with a "Reopen" button that mints a fresh portal under the
+// same sessionId (so the patient's mid-fill draft re-attaches).
+
+async function listPendingSessions() {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const t = db.transaction('pending_sessions', 'readonly');
+    const req = t.objectStore('pending_sessions').getAll();
+    req.onsuccess = () => {
+      const out = (req.result || []).slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      resolve(out);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+async function getPendingSession(id) { return dbGet('pending_sessions', id); }
+async function deletePendingSession(id) { return dbDelete('pending_sessions', id); }
+async function savePendingSession(record) {
+  if (!record || !record.id) throw new Error('savePendingSession: id required');
+  const stored = {
+    id:           record.id,
+    formId:       record.formId || null,
+    formSnapshot: record.formSnapshot || null,
+    senderLabel:  record.senderLabel || '',
+    state:        record.state || 'dormant',
+    createdAt:    record.createdAt || Date.now(),
+    updatedAt:    Date.now()
+  };
+  await dbPut('pending_sessions', record.id, stored);
   return stored;
 }
 
@@ -227,5 +272,14 @@ window.ProxStore = {
   getSubmission,
   saveSubmission,
   deleteSubmission,
-  newSubmissionId
+  newSubmissionId,
+  // Pending sessions (survive a reload — metadata only, no PHI).
+  listPendingSessions,
+  getPendingSession,
+  savePendingSession,
+  deletePendingSession,
+  // End-of-shift hygiene. Wipes every entry in a store in one transaction.
+  // Forms templates are preserved on purpose — wipe them separately if you
+  // want a true factory reset.
+  clearStore: dbClear
 };

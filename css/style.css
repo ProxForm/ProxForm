@@ -311,6 +311,18 @@ body.app-page.builder-page .app-main {
   margin-left: auto;
   margin-right: auto;
 }
+/* Portal (dashboard) and Forms-list also use the wide layout — the
+   submissions + active-sessions grids need the room or every card wraps
+   onto two lines. Import view stays at the default narrow width since its
+   docs read better as a single column. */
+body.app-page.received-page .app-main,
+body.app-page.forms-page .app-main {
+  max-width: none !important;
+  width: 96vw;
+  width: min(96vw, 1800px);
+  margin-left: auto;
+  margin-right: auto;
+}
 
 /* Builder side-by-side: editor on the left, live preview on the right.
    Stacks below 980px so the preview moves under the editor on narrow screens. */
@@ -415,6 +427,29 @@ html { scroll-behavior: smooth; }
 .forms-list {
   display: grid; gap: 0.85rem; margin-top: 1.25rem;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+/* Submissions render newest-first as a vertical log — easier to scan for
+   hospital staff watching tickets land in real time than a side-by-side
+   grid. Keeps the .forms-list card chrome, just stacks the cards. */
+#submissions-list {
+  grid-template-columns: 1fr;
+}
+#submissions-list .form-card .row {
+  margin-top: 0.4rem;
+}
+/* Elapsed-time badges — loud so hospital staff can scan the column for
+   anything stale at a glance. Color comes from the theme accent so it
+   reads as a primary signal, not a date. */
+.elapsed {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--accent, #fcd116);
+  border: 2px solid var(--ink, #111);
+  border-radius: 6px;
+  padding: 0.05rem 0.45rem;
+  margin-right: 0.25rem;
 }
 .form-card {
   background: var(--surface);
@@ -1480,7 +1515,9 @@ body.reorder-locked .field-drag:hover {
   font-size: 0.95rem;
   color: var(--text);
 }
-.intake-section:first-child { border-top: none; }
+/* First section keeps its top border so the form's top edge is visible.
+   The wrapper (.patient-form) intentionally has border-top: none — the
+   first child's border acts as the wrapper's top edge. */
 .intake-section-desc {
   font-weight: 400;
   font-size: 0.85rem;
@@ -1720,6 +1757,173 @@ html[data-theme="dark"] body.home-page::before {
 /* Mirror layer — sits between the halftone dots and the content. A diagonal
    sheen reads like glass catching light; the radial wash brightens the center
    so the foreground text stays the focus. */
+/* ── Privacy shield (js/shield.js) ──────────────────────────────────── */
+
+.sub-shield-picker {
+  margin: 0.5rem 0 0.75rem;
+  font-size: 0.85rem;
+}
+.prox-shield-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.6rem;
+  border: 2px solid var(--ink, #111);
+  border-radius: 8px;
+  background: var(--surface-2, #fcf7e0);
+  box-shadow: 2px 2px 0 var(--ink, #111);
+}
+.prox-shield-picker select {
+  font: inherit;
+  border: 1px solid var(--ink, #111);
+  border-radius: 5px;
+  padding: 0.15rem 0.35rem;
+  background: var(--surface, #fff);
+  color: var(--text, #111);
+}
+
+/* Shielded container: blur every answer cell, dim the labels. Pointer
+   events stay alive so the overlay can capture the unshield click. */
+.prox-shielded { position: relative; }
+.prox-shielded .intake-cell .intake-answer,
+.prox-shielded .intake-answer,
+.prox-shielded input,
+.prox-shielded textarea,
+.prox-shielded .intake-num,
+.prox-shielded .file-thumb {
+  filter: blur(7px);
+  user-select: none;
+  pointer-events: none;
+}
+.prox-shielded .intake-label { color: var(--muted, #666); }
+
+.prox-shield-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 17, 17, 0.35);
+  backdrop-filter: blur(2px);
+  cursor: pointer;
+  z-index: 1;
+  border-radius: var(--radius, 10px);
+}
+.prox-shield-card {
+  background: var(--surface, #fff);
+  border: 3px solid var(--ink, #111);
+  border-radius: 14px;
+  box-shadow: 6px 6px 0 var(--ink, #111);
+  padding: 1.1rem 1.5rem;
+  max-width: 360px;
+  text-align: center;
+}
+.prox-shield-card h2  { margin: 0.25rem 0 0.35rem; font-size: 1.05rem; }
+.prox-shield-card p   { margin: 0; color: var(--muted, #666); font-size: 0.9rem; }
+.prox-shield-icon     { font-size: 1.8rem; }
+
+/* Floating "still viewing?" banner — fixed bottom-right so it doesn't
+   cover anything important. Auto-shield engages when the countdown hits 0. */
+.prox-shield-warn {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 1000;
+  pointer-events: auto;
+}
+.prox-shield-warn-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  background: var(--accent, #fcd116);
+  color: var(--text, #111);
+  border: 3px solid var(--ink, #111);
+  border-radius: 12px;
+  box-shadow: 5px 5px 0 var(--ink, #111);
+  padding: 0.7rem 0.95rem;
+  font-size: 0.92rem;
+}
+.prox-shield-warn-inner button.primary {
+  font-family: inherit;
+  font-weight: 700;
+  padding: 0.4rem 0.85rem;
+  border: 2px solid var(--ink, #111);
+  border-radius: 7px;
+  background: var(--danger, #e30613);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--ink, #111);
+}
+.prox-shield-count {
+  display: inline-block;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* End-shift button — secondary chrome but red text/accent so it reads as
+   destructive without screaming for attention. */
+.secondary.danger {
+  color: var(--danger, #e30613);
+  border-color: var(--danger, #e30613);
+}
+.secondary.danger:hover { background: var(--danger, #e30613); color: #fff; }
+
+/* ── Themed confirm dialog (js/dialog.js) ───────────────────────────── */
+
+dialog.prox-confirm {
+  border: 3px solid var(--ink, #111);
+  border-radius: 14px;
+  padding: 1.25rem 1.4rem 1.1rem;
+  background: var(--surface, #fff);
+  color: var(--text, #111);
+  box-shadow: 6px 6px 0 var(--ink, #111);
+  max-width: 460px;
+  width: calc(100vw - 2rem);
+  font-family: inherit;
+}
+dialog.prox-confirm::backdrop {
+  background: rgba(17, 17, 17, 0.55);
+}
+dialog.prox-confirm .prox-confirm-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+dialog.prox-confirm .prox-confirm-message {
+  margin: 0 0 1.1rem;
+  line-height: 1.5;
+  color: var(--text, #111);
+}
+dialog.prox-confirm .prox-confirm-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+dialog.prox-confirm button {
+  font-family: inherit;
+  font-weight: 700;
+  padding: 0.55rem 1rem;
+  border: 2.5px solid var(--ink, #111);
+  border-radius: 8px;
+  box-shadow: 3px 3px 0 var(--ink, #111);
+  background: var(--surface-2, #fcf7e0);
+  color: var(--text, #111);
+  cursor: pointer;
+  transition: transform 0.05s ease, box-shadow 0.05s ease;
+}
+dialog.prox-confirm button:hover  { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink, #111); }
+dialog.prox-confirm button:active { transform: translate(2px, 2px);   box-shadow: 1px 1px 0 var(--ink, #111); }
+dialog.prox-confirm button.primary {
+  background: var(--accent, #fcd116);
+}
+dialog.prox-confirm button.primary.danger {
+  background: var(--danger, #e30613);
+  color: #fff;
+}
+
+/* In the SPA shell .bg-mirror sits permanently in app.html so the home/gdpr
+   routes can show it without injection plumbing. Hide it everywhere else. */
+body:not(.home-page) .bg-mirror { display: none; }
 .bg-mirror {
   position: fixed;
   inset: 0;
@@ -2300,6 +2504,7 @@ html[data-theme="dark"] .footer-attribution { border-top-color: var(--accent); }
 .session-card.state-disconnected  { border-left-color: #c0392b; }
 .session-card.state-submitted     { border-left-color: #5b6ee1; }
 .session-card.state-closed        { border-left-color: #999; opacity: 0.65; }
+.session-card.state-dormant       { border-left-color: #8b6c2c; background: rgba(211,163,23,0.06); }
 
 .session-card-head {
   display: grid;
@@ -2356,6 +2561,7 @@ html[data-theme="dark"] .footer-attribution { border-top-color: var(--accent); }
 .session-card.state-connecting   .session-card-state { background: rgba(74,144,226,0.18); color: #1e5a9e; }
 .session-card.state-disconnected .session-card-state { background: rgba(192,57,43,0.15);  color: #9c2a1f; }
 .session-card.state-submitted    .session-card-state { background: rgba(91,110,225,0.18); color: #3a48ad; }
+.session-card.state-dormant      .session-card-state { background: rgba(139,108,44,0.18); color: #6b5219; }
 
 .session-card-body {
   padding: 0.75rem 0.85rem 1rem;
