@@ -1,0 +1,68 @@
+<!doctype html>
+<!-- © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ProxForm</title>
+  <meta name="description" content="ProxForm — the GDPR-proof, browser-only medical form portal.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/icons/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css?v=11">
+  <script src="/js/theme.js?v=11" defer></script>
+  <script src="/js/netcheck.js?v=11" defer></script>
+  <script src="/js/storage.js?v=11" defer></script>
+  <script src="/js/crypto.js?v=11" defer></script>
+  <script src="/js/p2p.js?v=11" defer></script>
+  <script src="/js/sessions.js?v=11" defer></script>
+  <script src="/js/render.js?v=11" defer></script>
+  <script src="/js/cond.js?v=11" defer></script>
+  <script src="/js/sig.js?v=11" defer></script>
+  <script src="/js/import.js?v=11" defer></script>
+  <script src="/js/templates.js?v=11" defer></script>
+  <script src="/js/builder.js?v=11" defer></script>
+  <script src="/js/dashboard.js?v=11" defer></script>
+  <script src="/js/router.js?v=11" defer></script>
+  <script src="/js/footer.js?v=11" defer></script>
+  <script src="/js/analytics.js?v=11" defer></script>
+</head>
+<body class="app-page" data-page="app">
+  <header class="topbar">
+    <a class="brand" href="#/received">ProxForm</a>
+    <nav class="topnav" aria-label="Primary navigation">
+      <a href="#/received" data-route="received">Inbox</a>
+      <a href="#/build"    data-route="build">Build</a>
+      <a href="#/forms"    data-route="forms">My forms</a>
+      <a href="#/import"   data-route="import">Import</a>
+    </nav>
+    <div class="topbar-actions">
+      <span id="net-status" class="net-status net-checking" title="Checking whether your network can make direct peer-to-peer connections to a patient.">Checking…</span>
+      <span id="conn-status" class="conn-status" title="Status of the active session, if one is open.">Not connected</span>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Switch between light and dark">◐</button>
+    </div>
+  </header>
+
+  <main id="view-host" class="app-main" aria-live="polite">
+    <p class="muted" style="padding:1.5rem">Loading…</p>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <p class="footer-tagline"><strong>Private by design.</strong> ProxForm is <em>GDPR-compliant by architecture</em> — answers travel browser-to-browser, end-to-end encrypted. Like a sheet of paper, not a database.</p>
+      <nav class="footer-nav">
+        <a href="/#how">How it works</a>
+        <a href="/gdpr.html">Why GDPR-proof</a>
+        <a href="/#faq">FAQ</a>
+        <button id="contact-btn" type="button" class="link-btn">Contact us</button>
+      </nav>
+      <p class="footer-attribution">
+        ProxForm by <a href="https://artivicolab.com" target="_blank" rel="noopener">Artivicolab</a>
+        · Auditable · No accounts · No PHI on any server
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

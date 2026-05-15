@@ -9,19 +9,34 @@
   <meta name="robots" content="noindex">
   <link rel="icon" href="/icons/favicon.svg">
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/css/style.css?v=9">
-  <script src="/js/theme.js?v=9" defer></script>
-  <script src="/js/storage.js?v=9" defer></script>
-  <script src="/js/netcheck.js?v=9" defer></script>
-  <script src="/js/crypto.js?v=9" defer></script>
-  <script src="/js/p2p.js?v=9" defer></script>
-  <script src="/js/render.js?v=9" defer></script>
-  <script src="/js/cond.js?v=9" defer></script>
-  <script src="/js/sig.js?v=9" defer></script>
-  <script src="/js/import.js?v=9" defer></script>
-  <script src="/js/builder.js?v=9" defer></script>
-  <script src="/js/footer.js?v=9" defer></script>
-  <script src="/js/analytics.js?v=9" defer></script>
+  <script>
+    // Legacy page — route the browser to the SPA shell. The fetch() the
+    // shell's router uses to pull this page's <main> ignores scripts, so
+    // fragment extraction still works.
+    (function () {
+      try {
+        var p = new URL(location.href).searchParams;
+        var hash = '#/build';
+        if (p.get('submission')) hash = '#/submission/' + encodeURIComponent(p.get('submission'));
+        else if (p.get('form'))  hash = '#/build/' + encodeURIComponent(p.get('form'));
+        location.replace('/app.html' + hash);
+      } catch (_) { location.replace('/app.html#/build'); }
+    })();
+  </script>
+  <link rel="stylesheet" href="/css/style.css?v=11">
+  <script src="/js/theme.js?v=11" defer></script>
+  <script src="/js/storage.js?v=11" defer></script>
+  <script src="/js/netcheck.js?v=11" defer></script>
+  <script src="/js/crypto.js?v=11" defer></script>
+  <script src="/js/p2p.js?v=11" defer></script>
+  <script src="/js/sessions.js?v=11" defer></script>
+  <script src="/js/render.js?v=11" defer></script>
+  <script src="/js/cond.js?v=11" defer></script>
+  <script src="/js/sig.js?v=11" defer></script>
+  <script src="/js/import.js?v=11" defer></script>
+  <script src="/js/builder.js?v=11" defer></script>
+  <script src="/js/footer.js?v=11" defer></script>
+  <script src="/js/analytics.js?v=11" defer></script>
 </head>
 <body class="app-page builder-page">
   <header class="topbar">
@@ -44,7 +59,7 @@
 
     <!-- Step 1: build the form -->
     <section id="step-build" class="step hidden">
-      <a href="/forms.html" class="back-link">← All forms</a>
+      <a href="#/forms" class="back-link">← All forms</a>
       <div class="step-head">
         <h1>Build the form</h1>
         <span id="save-indicator" class="save-indicator save-clean" aria-live="polite" title="Drafts are saved in this browser only — never on a server.">✓ Saved</span>
@@ -126,9 +141,8 @@
             <button class="chip"              data-add="radio"    title="Add a single-choice question (one option from a list)">Single choice</button>
             <button class="chip"              data-add="checkbox" title="Add a multi-choice question (tick all that apply)">Multi choice</button>
             <button class="chip"              data-add="yesno"    title="Add a Yes / No question">Yes / No</button>
-            <button class="chip"              data-add="file"      title="Let the patient attach a file or take a photo (ID scan, photo, etc.)">File / photo</button>
+            <button class="chip"              data-add="file"      title="Add a file / photo upload — patient picks or snaps with camera; max 5 MB">File / photo</button>
             <button class="chip"              data-add="signature" title="Capture a handwritten signature on a drawing pad (mouse, finger, or stylus)">Signature</button>
-            <button class="chip"              data-add="file"     title="Add a file / photo upload — patient picks or snaps with camera; max 5 MB">File / photo</button>
           </div>
 
           <div class="actions">
@@ -158,43 +172,9 @@
       </div>
     </section>
 
-    <!-- Step 2: link + passphrase generated, waiting for patient's reply -->
-    <section id="step-share" class="step hidden">
-      <h1>Share with your patient</h1>
-      <p class="muted">Send the <strong>link</strong> through one channel (email) and the <strong>passphrase</strong> through a different channel (SMS, phone). That two-channel split is what keeps it secure.</p>
-
-      <label class="readonly-field">
-        <span>Patient link</span>
-        <div class="copy-row">
-          <input id="invite-url" type="text" readonly>
-          <button id="copy-url" class="secondary">Copy</button>
-        </div>
-      </label>
-
-      <label class="readonly-field">
-        <span>Passphrase</span>
-        <div class="copy-row">
-          <input id="invite-pass" type="text" readonly>
-          <button id="copy-pass" class="secondary">Copy</button>
-        </div>
-      </label>
-
-      <h2>Waiting for the patient's reply</h2>
-      <p class="muted">When your patient opens the link and enters the passphrase, their browser will produce a reply link. Paste it here:</p>
-
-      <label class="readonly-field">
-        <span>Reply link from patient</span>
-        <textarea id="reply-paste" rows="3" placeholder="Paste the reply link they sent you"></textarea>
-      </label>
-
-      <div class="actions">
-        <button id="btn-connect" class="primary">Connect <span class="arrow">→</span></button>
-      </div>
-    </section>
-
-    <!-- Step 4: view a saved submission (?submission=<id>) -->
+    <!-- Saved submission view (#/submission/:id) -->
     <section id="step-submission" class="step hidden">
-      <a href="/received.html" class="back-link">← All submissions</a>
+      <a href="#/received" class="back-link">← All submissions</a>
       <div class="live-header">
         <h1 id="sub-title">Submission</h1>
         <div id="sub-id-badge" class="session-code" title="Submission ID"></div>
@@ -207,22 +187,6 @@
         <button id="btn-sub-export" class="primary" type="button">Export JSON</button>
         <button id="btn-sub-print" class="secondary" type="button">Print / PDF</button>
         <button id="btn-sub-delete" class="secondary" type="button">Delete</button>
-      </div>
-    </section>
-
-    <!-- Step 3: connected — live view of patient's answers -->
-    <section id="step-live" class="step hidden">
-      <div class="live-header">
-        <h1 id="live-title">Patient is filling the form</h1>
-        <div id="session-code" class="session-code" title="Read this out loud to your patient — both screens must show the same code."></div>
-      </div>
-      <p class="muted">Answers update live as the patient types. Nothing is saved anywhere except your browser tab.</p>
-
-      <div id="answers-live" class="answers-live"></div>
-
-      <div class="actions">
-        <button id="btn-download" class="primary" disabled>Download answers (JSON)</button>
-        <button id="btn-print" class="secondary" disabled>Print / Save as PDF</button>
       </div>
     </section>
 

@@ -139,6 +139,12 @@ function setupChannel(channel) {
     if (msg.type === 'form') {
       form = msg.form;
       peerNonce = msg.nonce || '';
+      // Stable session identity. If the clinician sent one, use it as the
+      // draft key so a fresh handshake on the same logical session (after a
+      // reconnect, with a new offer/passphrase) restores the same draft.
+      // Older clinician builds without this field continue to use the
+      // offer-hash key already set in initStorage().
+      if (msg.sessionId && storageOk) draftKey = msg.sessionId;
       const code = await computeSessionCode(myNonce, peerNonce);
       const el = document.getElementById('session-code');
       if (el) el.textContent = '🔐 ' + code;
@@ -146,6 +152,21 @@ function setupChannel(channel) {
       seedDefaults();
       renderForm();
       go('step-form');
+      // If a draft restored prior answers, tell the clinician where we are
+      // so their live preview catches up. File blobs ride the chunked
+      // file-start/chunk/end protocol at submit time, so substitute slim
+      // placeholders here.
+      if (msg.sessionId && Object.keys(answers).length && dc && dc.readyState === 'open') {
+        const lean = {};
+        for (const [k, v] of Object.entries(answers)) {
+          if (v && typeof v === 'object' && typeof v.data === 'string' && typeof v.mime === 'string') {
+            lean[k] = { _pendingFile: true, name: v.name || '', mime: v.mime, size: v.size || 0 };
+          } else {
+            lean[k] = v;
+          }
+        }
+        try { dc.send(JSON.stringify({ type: 'state-sync', answers: lean })); } catch (_) {}
+      }
     }
   });
 

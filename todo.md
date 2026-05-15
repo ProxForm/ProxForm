@@ -64,3 +64,38 @@ All initial items completed. Kept as a record of what shipped.
 - Form analytics / submission count per form.
 - Email integration / cloud sync (deliberately not built — would break the GDPR-proof architecture).
 - Pricing page / paywall.
+
+---
+
+## 24. ✅ Phase 1 — Multi-session workspace + reconnect + blank-correction portal
+
+Plan file (full design, user-approved): `/Users/gradikayamba/.claude/plans/lucky-mapping-kite.md`
+
+**Goal:** clinic uses ProxForm all day as a dashboard. Parallel patient sessions (N invites out at once, replies trickling back), reconnect without data loss if a patient drops, submit-and-purge of in-memory PHI, first-come ordering of submissions, blank correction portal from a completed submission (deliberately no answer-prefill — wrong-row leak risk).
+
+User's three UX picks (locked in):
+- Whole site is one in-page SPA-ish shell — Phase 2 (deferred).
+- Dashboard home merges into `/received.html` — ✅ done.
+- Manual reconnect button only (no auto-ICE-restart in v1) — ✅ done.
+
+### Wire-protocol foundation (single-session unchanged)
+
+- [js/builder.js](js/builder.js) — module-global `let sessionId = ''` + `newSessionId()` (UUID with `getRandomValues` fallback). Allocated lazily in `generateLink()`. Included in outgoing `{type:'form', nonce, sessionId, form}` payload. New `state-sync` handler wholesale-replaces `answers` with `msg.answers`.
+- [js/fill.js](js/fill.js) — on receiving `form` message, if `msg.sessionId` set → switches `draftKey` to that ID before `restoreAnswers()`. After restore, if `answers` non-empty, emits one `{type:'state-sync', answers: lean}` (file blobs → `_pendingFile` placeholders).
+- No storage schema change — `ProxStore.saveFillDraft(sessionId, ...)` already accepts any string key.
+
+### Phase 1 deliverables (all shipped)
+
+- ✅ [js/sessions.js](js/sessions.js) — `window.ProxSessions` multi-session manager. API: `create / connect / reconnect / end / get / list / sendCorrection / setLabel / on`. State machine `waiting → connecting → connected → (disconnected ↔ connecting) → submitted → closed`. Per-session record owns its own `pc`, `dc`, `answers`, `filesInProgress`, nonces. On submit → `ProxStore.saveSubmission` + purge `filesInProgress` (in-memory `answers` kept for the UI but never re-shared; the submission record in IndexedDB is canonical).
+- ✅ [js/dashboard.js](js/dashboard.js) — owns the Active Sessions panel and the Send-new-invite picker on `/received.html`. Cards: short ID + label + form title + SAS + state pill + body with invite link, passphrase, reply-paste, action buttons. Live answer preview via inline `intake-cell` rendering.
+- ✅ [received.html](received.html) — `<section id="active-sessions">` above `<section id="submissions">` (now `#submissions-list`). Send-new-invite form (saved-form picker + optional label). Loads `crypto.js`, `p2p.js`, `sessions.js`, `dashboard.js`. Existing submissions list untouched.
+- ✅ Submissions list **Resend (blank)** action in [js/builder.js:1540](js/builder.js#L1540) → calls `ProxSessions.sendCorrection(submissionId)` → fresh blank session card. No answers attached.
+- ✅ Session-card CSS in `css/style.css` (`.dash-section`, `.dash-sender`, `.active-sessions`, `.session-card`, state-pill colour-coding, expandable body, mobile grid-area fallback).
+- ✅ Cache-bust `?v=9 → ?v=10` across all `*.html`; `sw.js` `CACHE = 'proxform-v10'` with `js/sessions.js` + `js/dashboard.js` added to ASSETS.
+- ✅ Removed duplicate **File / photo** chip in `builder.html`.
+- ✅ CLAUDE.md updated — now lists all pages/modules and documents the two-paths transitional state.
+
+### Phase 2 — deferred
+
+- SPA shell so navigation doesn't tear down sessions. Until shipped, the clinic has to stay on `received.html` for sessions to stay alive.
+- Unify the two clinician session-host paths (legacy in `builder.js`, multi in `sessions.js`) — belongs in the SPA refactor, not before.

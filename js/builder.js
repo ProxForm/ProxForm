@@ -188,14 +188,6 @@ function persistCollapsedState() {
   } catch (_) {}
 }
 
-let pc = null;
-let dc = null;
-let answers = {};
-let formSent = false;
-const filesInProgress = {};
-let myNonce = '';
-let peerNonce = '';
-
 let saveDraft = () => {};   // replaced after wireup
 let storageOk = false;
 
@@ -1108,115 +1100,33 @@ async function generateLink() {
   for (const f of fields) {
     if (!f.label.trim()) { toast(f.type === 'section' ? 'Every section needs a title' : 'Every question needs a label'); return; }
   }
+  if (!window.ProxSessions) { toast('Session module unavailable'); return; }
 
-  setStatus('Setting up…');
-  const fillUrlBase = location.origin + '/fill.html';
-  const session = await createSession({ fillUrlBase });
-
-  pc = session.pc;
-  dc = session.channel;
-  setupChannel(dc);
-
-  document.getElementById('invite-url').value  = session.url;
-  document.getElementById('invite-pass').value = session.passphrase;
-  go('step-share');
-  setStatus('Waiting for patient');
-
-  navigator.clipboard?.writeText(session.url).then(
-    () => toast('Link copied — send it, then the passphrase separately'),
-    () => {}
-  );
-}
-
-async function connect() {
-  const raw = document.getElementById('reply-paste').value.trim();
-  if (!raw) { toast('Paste the reply link from your patient first'); return; }
-  let encoded = raw;
-  if (raw.includes('#answer=')) encoded = raw.split('#answer=')[1];
-  else if (raw.includes('answer=')) encoded = raw.split('answer=')[1];
-  encoded = encoded.split('&')[0];
-
-  setStatus('Connecting…');
+  let session = null;
   try {
-    const passphrase = document.getElementById('invite-pass').value;
-    await completeSession({ pc, encryptedAnswer: encoded, passphrase });
+    session = await ProxSessions.create({
+      formSnapshot: buildFormSnapshot(),
+      formId: currentFormId,
+      label: title
+    });
   } catch (_) {
-    toast('Could not decrypt the reply — passphrase mismatch or wrong link');
-    setStatus('Waiting for patient');
+    toast('Could not start session');
+    return;
   }
+
+  navigator.clipboard?.writeText(session.inviteUrl).then(
+    () => toast('Invite created — link copied. Open Inbox to send the passphrase and watch for the reply.'),
+    () => toast('Invite created — open Inbox to copy the link & passphrase.')
+  );
+
+  // Hand off to the dashboard — that's where parallel sessions live now.
+  if (window.ProxRouter) ProxRouter.go('received');
+  else location.href = '/app.html#/received';
 }
 
-function setupChannel(channel) {
-  myNonce = genNonce();
-
-  channel.addEventListener('open', () => {
-    setStatus('Connected');
-    channel.send(JSON.stringify({
-      type: 'form',
-      nonce: myNonce,
-      form: buildFormSnapshot()
-    }));
-    formSent = true;
-    go('step-live');
-    document.getElementById('live-title').textContent =
-      'Live: ' + (document.getElementById('form-title').value || 'Form');
-    renderAnswers();
-  });
-
-  channel.addEventListener('message', async (e) => {
-    let msg;
-    try { msg = JSON.parse(e.data); } catch (_) { return; }
-    if (msg.type === 'hello' && msg.nonce) {
-      peerNonce = msg.nonce;
-      const code = await computeSessionCode(myNonce, peerNonce);
-      const el = document.getElementById('session-code');
-      if (el) el.textContent = '🔐 ' + code;
-    } else if (msg.type === 'answer-update') {
-      answers[msg.fieldId] = msg.value;
-      renderAnswers();
-    } else if (msg.type === 'file-start') {
-      filesInProgress[msg.fieldId] = {
-        name: msg.name, mime: msg.mime, size: msg.size,
-        chunks: new Array(msg.totalChunks)
-      };
-    } else if (msg.type === 'file-chunk') {
-      const fip = filesInProgress[msg.fieldId];
-      if (fip) fip.chunks[msg.index] = msg.data;
-    } else if (msg.type === 'file-end') {
-      const fip = filesInProgress[msg.fieldId];
-      if (fip) {
-        answers[msg.fieldId] = {
-          name: fip.name, mime: fip.mime, size: fip.size,
-          data: fip.chunks.join('')
-        };
-        delete filesInProgress[msg.fieldId];
-        renderAnswers();
-      }
-    } else if (msg.type === 'submit') {
-      // Merge non-file answers without clobbering files that arrived in the
-      // file-start/chunk/end stream just before this submit message.
-      const incoming = msg.answers || {};
-      for (const k of Object.keys(incoming)) answers[k] = incoming[k];
-      renderAnswers();
-      document.getElementById('btn-download').disabled = false;
-      document.getElementById('btn-print').disabled = false;
-      toast('Patient submitted the form');
-      // Persist on the clinician's own device so the submission survives a tab
-      // refresh and shows up in the dashboard. No network involvement.
-      if (storageOk) {
-        const snap = buildFormSnapshot();
-        ProxStore.saveSubmission({
-          formId:       currentFormId,
-          formTitle:    snap.title || 'Untitled form',
-          formSnapshot: snap,
-          answers
-        }).catch(() => { /* swallow — we still have the in-memory copy */ });
-      }
-    }
-  });
-
-  channel.addEventListener('close', () => setStatus('Disconnected'));
-}
+// step-share / step-live were retired in Phase 2. All session UI now lives
+// on the dashboard (#/received) via js/dashboard.js. renderAnswers,
+// wireSessionEvents and connect() were removed along with them.
 
 // ── Paper-print rendering ─────────────────────────────────────────────────
 // Generates a static, printer-friendly HTML version of the form. No real
@@ -1383,34 +1293,6 @@ function buildFormSnapshot() {
   };
 }
 
-function renderAnswers() {
-  const root = document.getElementById('answers-live');
-  const snap = buildFormSnapshot();
-  root.innerHTML = ProxRender.renderIntakeRows(snap.fields, (f, qNum) => {
-    const v = answers[f.id];
-    const numPrefix = qNum != null ? `<span class="intake-num">${qNum}.</span> ` : '';
-    const colCls = ['half', 'third', 'quarter'].includes(f.column) ? f.column : 'full';
-    return `
-      <div class="intake-cell ${colCls}">
-        <div class="intake-label">${numPrefix}${escapeHtml(f.label)}${f.required ? ' <span class="req">*</span>' : ''}</div>
-        <div class="intake-answer">${formatAnswer(f, v)}</div>
-      </div>
-    `;
-  }, { numbered: !!snap.numbered });
-}
-
-function formatAnswer(f, v) {
-  if (v == null || v === '' || (Array.isArray(v) && !v.length)) return '<span class="muted">—</span>';
-  if (v && typeof v === 'object' && v._pendingFile) {
-    const kb = v.size ? ' · ' + Math.ceil(v.size / 1024) + ' KB' : '';
-    return `<span class="muted">📎 ${escapeHtml(v.name || (f.type === 'signature' ? 'signature' : 'file'))}${kb} — uploading on submit</span>`;
-  }
-  if ((f.type === 'file' || f.type === 'signature') && v && typeof v === 'object' && v.data) return renderFileAnswer(v);
-  if (Array.isArray(v)) return v.map(escapeHtml).join(', ');
-  if (f.type === 'yesno') return v ? 'Yes' : 'No';
-  return escapeHtml(String(v));
-}
-
 function renderFileAnswer(v) {
   const safeName = escapeHtml(v.name || 'file');
   const dataUrl = 'data:' + (v.mime || 'application/octet-stream') + ';base64,' + v.data;
@@ -1424,23 +1306,6 @@ function renderFileAnswer(v) {
   return `<a class="file-link" href="${dataUrl}" download="${safeName}">📎 ${safeName}${sizeKB ? ' · ' + sizeKB : ''}</a>`;
 }
 
-// ── Download / Print ──────────────────────────────────────────────────────
-
-function downloadJson() {
-  const snap = buildFormSnapshot();
-  const payload = {
-    form: snap,
-    answers,
-    submittedAt: new Date().toISOString()
-  };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `${slug(snap.title)}-${Date.now()}.json`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
 function slug(s) {
   return (s || 'form').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
@@ -1448,7 +1313,7 @@ function slug(s) {
 // ── UI helpers ────────────────────────────────────────────────────────────
 
 function go(stepId) {
-  ['step-dashboard', 'step-build', 'step-share', 'step-live', 'step-submission'].forEach(id => {
+  ['step-build', 'step-submission'].forEach(id => {
     document.getElementById(id)?.classList.toggle('hidden', id !== stepId);
   });
 }
@@ -1510,7 +1375,8 @@ async function loadSubmissionView(id) {
   document.getElementById('btn-sub-delete').onclick = async () => {
     if (!confirm('Delete this submission permanently?')) return;
     try { await ProxStore.deleteSubmission(sub.id); } catch (_) {}
-    location.replace('/received.html');
+    if (window.ProxRouter) ProxRouter.go('received');
+    else location.replace('/received.html');
   };
 
   return true;
@@ -1566,7 +1432,8 @@ async function renderSubmissions() {
         <div class="meta">${answered}/${total} answered · received ${fmtDateTime(s.receivedAt)}</div>
         <div class="meta sub-id" title="Submission ID">#${escapeHtml(shortId(s.id))}</div>
         <div class="row">
-          <a class="primary" href="/builder.html?submission=${encodeURIComponent(s.id)}">View</a>
+          <a class="primary" href="${window.ProxRouter ? '#/submission/' + encodeURIComponent(s.id) : '/builder.html?submission=' + encodeURIComponent(s.id)}">View</a>
+          <button class="secondary" data-sub-act="resend" data-id="${escapeHtml(s.id)}" type="button" title="Open a new blank portal for this patient to refill — no previous answers are carried over.">Resend (blank)</button>
           <button class="secondary" data-sub-act="export" data-id="${escapeHtml(s.id)}" type="button">Export JSON</button>
           <button class="secondary" data-sub-act="delete" data-id="${escapeHtml(s.id)}" type="button">Delete</button>
         </div>
@@ -1591,6 +1458,16 @@ async function renderSubmissions() {
         a.download = (slug(sub.formTitle) || 'submission') + '-' + shortId(sub.id) + '.json';
         a.click();
         URL.revokeObjectURL(a.href);
+      } else if (act === 'resend') {
+        if (!window.ProxSessions) { toast('Session module not loaded yet — try again in a moment'); return; }
+        try {
+          await ProxSessions.sendCorrection(id);
+          toast('Blank correction portal opened — share the new link and passphrase');
+          // Scroll up so the new card in the active-sessions panel is visible.
+          document.getElementById('active-sessions-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch (e) {
+          toast('Could not open correction portal: ' + (e.message || e));
+        }
       }
     });
   });
@@ -1637,7 +1514,7 @@ async function renderFormsList() {
           description: src.description || '',
           fields:      JSON.parse(JSON.stringify(src.fields || []))
         });
-        location.href = '/builder.html?form=' + encodeURIComponent(copy.id);
+        openFormInBuilder(copy.id);
       } else if (act === 'export') {
         const src = await ProxStore.getForm(id);
         if (!src) return;
@@ -1659,7 +1536,7 @@ async function renderFormsList() {
 
 async function newFormAndOpen() {
   const created = await ProxStore.createForm({ title: '', description: '', fields: [] });
-  location.href = '/builder.html?form=' + encodeURIComponent(created.id);
+  openFormInBuilder(created.id);
 }
 
 // ── Import ────────────────────────────────────────────────────────────────
@@ -1714,18 +1591,20 @@ async function doImport() {
       fields:      parsed.fields || []
     });
     closeImportDialog();
-    location.href = '/builder.html?form=' + encodeURIComponent(created.id);
+    openFormInBuilder(created.id);
   } catch (e) {
     showImportError('Could not save the imported form: ' + (e.message || e));
   }
 }
 
 function setStatus(text) {
-  document.getElementById('conn-status').textContent = text;
+  const el = document.getElementById('conn-status');
+  if (el) el.textContent = text;
 }
 
 function toast(msg) {
   const el = document.getElementById('toast');
+  if (!el) { console.warn(msg); return; }
   el.textContent = msg;
   el.classList.remove('hidden');
   clearTimeout(toast._t);
@@ -1733,40 +1612,64 @@ function toast(msg) {
 }
 
 // ── Wire up ───────────────────────────────────────────────────────────────
+//
+// Three clinician views live in this module: form editor (#/build), saved
+// forms list (#/forms), submission detail (#/submission/:id). Each exposes
+// mount(host, params) / unmount(host) for the SPA router (js/router.js).
+// When this file is loaded by a legacy standalone page (builder.html /
+// forms.html / received.html), DOMContentLoaded dispatches to the right
+// mount based on data-page and URL params.
 
-window.addEventListener('DOMContentLoaded', async () => {
-  const page = document.body.dataset.page || 'builder';
+// Route to the form editor for a specific form. Prefers the SPA router when
+// loaded inside app.html; falls back to a full navigation on legacy pages.
+function openFormInBuilder(id) {
+  if (window.ProxRouter) ProxRouter.go('build', id);
+  else location.href = '/builder.html?form=' + encodeURIComponent(id);
+}
 
+let _shellInited = false;
+async function initShellOnce() {
+  if (_shellInited) return;
+  _shellInited = true;
   ProxNet.checkAndDisplay('net-status');
-
   await initStorage();
   if (storageOk) {
     try { await ProxStore.migrateLegacyDraftIfNeeded(); } catch (_) {}
   }
+}
 
-  if (page === 'forms') {
-    wireImportDialog();
-    wireTemplatesDialog();
-    document.getElementById('btn-new-form')?.addEventListener('click', newFormAndOpen);
-    await renderFormsList();
+async function mountFormsView() {
+  await initShellOnce();
+  wireImportDialog();
+  wireTemplatesDialog();
+  document.getElementById('btn-new-form')?.addEventListener('click', newFormAndOpen);
+  await renderFormsList();
+}
+
+async function mountSubmissionView(submissionId) {
+  await initShellOnce();
+  if (!submissionId) {
+    if (window.ProxRouter) ProxRouter.go('received');
+    else location.replace('/received.html');
     return;
   }
-
-  if (page === 'received') {
-    await renderSubmissions();
+  const ok = await loadSubmissionView(submissionId);
+  if (!ok) {
+    toast('That submission no longer exists');
+    if (window.ProxRouter) ProxRouter.go('received');
+    else location.replace('/received.html');
     return;
   }
+  go('step-submission');
+}
 
-  // page === 'builder' (builder.html)
+async function mountBuilderView(formId) {
+  await initShellOnce();
+
   document.querySelectorAll('[data-add]').forEach(btn => {
     btn.addEventListener('click', () => addField(btn.dataset.add));
   });
   document.getElementById('btn-generate')?.addEventListener('click', generateLink);
-  document.getElementById('btn-connect')?.addEventListener('click', connect);
-  document.getElementById('btn-download')?.addEventListener('click', downloadJson);
-  document.getElementById('btn-print')?.addEventListener('click', () => window.print());
-  document.getElementById('copy-url')?.addEventListener('click', () => copyFrom('invite-url'));
-  document.getElementById('copy-pass')?.addEventListener('click', () => copyFrom('invite-pass'));
   document.getElementById('btn-clear-draft')?.addEventListener('click', () => {
     if (confirm('Clear the current draft? This cannot be undone.')) clearDraft();
   });
@@ -1789,11 +1692,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-test-fill')?.addEventListener('click', () => setTestFillMode(!previewTestMode));
   document.getElementById('btn-test-reset')?.addEventListener('click', resetTestAnswers);
   document.getElementById('btn-print-preview')?.addEventListener('click', () => {
-    // Print whatever's there. Live HTML5 validation already paints invalid
-    // fields red while the user types — no need for a blocking dialog here.
-    // Generate a paper-ready static HTML version of the form. Avoiding real
-    // <input> elements means browsers can't disagree on how to render them,
-    // which is how the printed PDF was coming out with tiny boxed inputs.
     const originalTitle = document.title;
     const snap = buildFormSnapshot();
     if (snap.title) document.title = snap.title;
@@ -1822,53 +1720,66 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('form-title')?.addEventListener('input',    () => { saveDraft(); renderPreview(); });
   document.getElementById('form-desc')?.addEventListener('input',     () => { saveDraft(); renderPreview(); });
   document.getElementById('form-numbered')?.addEventListener('change', () => { saveDraft(); renderPreview(); });
-  document.getElementById('form-numbered')?.addEventListener('change', () => { saveDraft(); renderPreview(); });
 
-  // Click a preview cell → expand and jump to its editor row.
   document.getElementById('form-preview')?.addEventListener('click', (e) => {
     const el = e.target.closest('.preview-clickable');
     if (!el) return;
     focusEditorRow(el.dataset.fieldId);
   });
 
-  // Collapsible explainer jumbotron above the editor. State persisted so
-  // power users only see the full panel once.
   initBuilderJumbo();
 
-  // Route based on the URL:
-  //   ?form=<id>       → editor
-  //   ?submission=<id> → submission detail view
-  //   neither          → bounce to the dashboard pages
-  const params = new URLSearchParams(location.search);
-  currentFormId = params.get('form');
-  const submissionId = params.get('submission');
+  currentFormId = formId || null;
 
-  if (submissionId) {
-    const ok = await loadSubmissionView(submissionId);
-    if (!ok) {
-      toast('That submission no longer exists');
-      location.replace('/received.html');
-      return;
-    }
-    go('step-submission');
+  if (!currentFormId) {
+    // No formId → bounce to the forms list. The SPA router handles in-app
+    // navigation; legacy pages do a full redirect.
+    if (window.ProxRouter) ProxRouter.go('forms');
+    else location.replace('/forms.html');
     return;
   }
 
-  if (currentFormId) {
-    loadCollapsedState();
-    const ok = await loadForm(currentFormId);
-    if (!ok) {
-      toast('That form no longer exists');
-      location.replace('/forms.html');
-      return;
-    }
-    go('step-build');
-    if (!fields.length) renderFields();
-    renderPreview();
-    updateSaveIndicator();
-  } else {
-    location.replace('/forms.html');
+  loadCollapsedState();
+  const ok = await loadForm(currentFormId);
+  if (!ok) {
+    toast('That form no longer exists');
+    if (window.ProxRouter) ProxRouter.go('forms');
+    else location.replace('/forms.html');
+    return;
   }
+  go('step-build');
+  if (!fields.length) renderFields();
+  renderPreview();
+  updateSaveIndicator();
+}
+
+// SPA mount wrappers — keyed off the route name. The host argument is the
+// shell's <main id="view-host">; current views read from document by id so
+// we don't need it directly, but it's passed for future scoping.
+window.ProxBuilderView = {
+  mount(host, params) { return mountBuilderView(params && params[0]); },
+  unmount() {}
+};
+window.ProxFormsView = {
+  mount() { return mountFormsView(); },
+  unmount() {}
+};
+window.ProxSubmissionView = {
+  mount(host, params) { return mountSubmissionView(params && params[0]); },
+  unmount() {}
+};
+
+// Legacy standalone-page bootstrap. The SPA shell sets data-page="app" and
+// the router calls the mount functions directly — skip this branch then.
+window.addEventListener('DOMContentLoaded', () => {
+  const page = document.body.dataset.page;
+  if (page === 'app') return;
+  const params = new URLSearchParams(location.search);
+  if (page === 'forms')    return mountFormsView();
+  if (page === 'received') return renderSubmissions();
+  const subId = params.get('submission');
+  if (subId) return mountSubmissionView(subId);
+  return mountBuilderView(params.get('form'));
 });
 
 const JUMBO_KEY = 'proxform_builder_jumbo_collapsed';
@@ -1942,7 +1853,7 @@ function wireTemplatesDialog() {
         fields:      JSON.parse(JSON.stringify(t.form.fields || []))
       });
       close();
-      location.href = '/builder.html?form=' + encodeURIComponent(created.id);
+      openFormInBuilder(created.id);
     } catch (err) {
       toast('Could not create form: ' + (err.message || err));
     }

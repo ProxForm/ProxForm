@@ -472,4 +472,149 @@
     parseIndented, parseJSON, parseAuto, toIndented,
     normalizeInput, validateForm, summarize, detectFormat
   };
+
+  // ── Standalone /import.html view (and #/import in the SPA shell) ──────
+  //
+  // Wires the textarea + file picker + Create/Validate/Clear buttons. Used
+  // by both legacy import.html (DOMContentLoaded) and the SPA router (which
+  // calls ProxImportView.mount(host) after injecting the view fragment).
+
+  function $(id) { return document.getElementById(id); }
+
+  function toast(msg) {
+    const el = $('toast');
+    if (!el) { console.warn(msg); return; }
+    el.textContent = msg;
+    el.classList.remove('hidden');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.classList.add('hidden'), 3000);
+  }
+
+  function showError(msg) {
+    hideResult();
+    const el = $('import-error');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+  function hideError()  { $('import-error')?.classList.add('hidden'); }
+  function hideResult() {
+    const el = $('import-result');
+    if (!el) return;
+    el.classList.add('hidden');
+    el.innerHTML = '';
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => (
+      { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
+    ));
+  }
+  function showSuccess(parsed, format) {
+    hideError();
+    const stats = summarize(parsed);
+    const typeBits = Object.keys(stats.byType).sort().map(k =>
+      `<span class="kv"><strong>${stats.byType[k]}</strong> ${escapeHtml(k)}</span>`
+    ).join('');
+    const fmtLabel = format === 'json' ? 'JSON' : 'YAML-style';
+    const title = escapeHtml(parsed.title || '(untitled form)');
+    let pretty = '';
+    if (format === 'json') {
+      try { pretty = JSON.stringify(parsed, null, 2); } catch (_) {}
+    }
+    const prettyBlock = pretty
+      ? `<details class="import-result-pretty"><summary>Pretty-printed JSON</summary><pre><code>${escapeHtml(pretty)}</code></pre></details>`
+      : '';
+    const el = $('import-result');
+    if (!el) return;
+    el.innerHTML =
+      `<div class="import-result-head"><span class="ok-badge">Valid ${fmtLabel}</span> <strong>${title}</strong></div>` +
+      `<div class="import-result-stats">` +
+        `<span class="kv"><strong>${stats.questions}</strong> question${stats.questions === 1 ? '' : 's'}</span>` +
+        `<span class="kv"><strong>${stats.sections}</strong> section${stats.sections === 1 ? '' : 's'}</span>` +
+        `<span class="kv"><strong>${stats.pages}</strong> page${stats.pages === 1 ? '' : 's'}</span>` +
+        (typeBits ? `<span class="kv-sep">·</span>${typeBits}` : '') +
+      `</div>` +
+      prettyBlock;
+    el.classList.remove('hidden');
+  }
+  async function readFile() {
+    const inp = $('import-file');
+    const f = inp && inp.files && inp.files[0];
+    return f ? await f.text() : null;
+  }
+
+  async function bootstrapStorage() {
+    if (!window.ProxStore) return;
+    const status = await ProxStore.checkStorage();
+    if (!status.ok) toast('Storage unavailable: cannot save the imported form.');
+    try { await ProxStore.migrateLegacyDraftIfNeeded(); } catch (_) {}
+  }
+
+  async function mount() {
+    if (window.ProxNet) ProxNet.checkAndDisplay('net-status');
+    await bootstrapStorage();
+
+    $('import-file')?.addEventListener('change', async () => {
+      try { const t = await readFile(); if (t) $('import-text').value = t; }
+      catch (_) {}
+    });
+
+    $('btn-import-clear')?.addEventListener('click', () => {
+      const t = $('import-text'); if (t) t.value = '';
+      const f = $('import-file'); if (f) f.value = '';
+      hideError();
+      hideResult();
+    });
+
+    $('btn-import-validate')?.addEventListener('click', async () => {
+      hideError();
+      hideResult();
+      let text = $('import-text')?.value || '';
+      if (!text.trim()) {
+        try { text = await readFile() || ''; } catch (_) {}
+      }
+      if (!text.trim()) { showError('Paste a definition or pick a file first.'); return; }
+      const format = detectFormat(text);
+      let parsed;
+      try { parsed = parseAuto(text); }
+      catch (e) { showError(e.message || String(e)); return; }
+      showSuccess(parsed, format);
+    });
+
+    $('btn-import-do')?.addEventListener('click', async () => {
+      hideError();
+      hideResult();
+      let text = $('import-text')?.value || '';
+      if (!text.trim()) {
+        try { text = await readFile() || ''; } catch (_) {}
+      }
+      if (!text.trim()) { showError('Paste a definition or pick a file first.'); return; }
+      let parsed;
+      try { parsed = parseAuto(text); }
+      catch (e) { showError(e.message || String(e)); return; }
+      try {
+        const created = await ProxStore.createForm({
+          title:       parsed.title || 'Imported form',
+          description: parsed.description || '',
+          fields:      parsed.fields || []
+        });
+        if (window.ProxRouter) ProxRouter.go('build', created.id);
+        else location.href = '/builder.html?form=' + encodeURIComponent(created.id);
+      } catch (e) {
+        showError('Could not save the imported form: ' + (e.message || e));
+      }
+    });
+  }
+
+  function unmount() { /* listeners are on cloned elements; GC handles them */ }
+
+  window.ProxImportView = { mount, unmount };
+
+  // Legacy import.html entry point.
+  document.addEventListener('DOMContentLoaded', () => {
+    const page = document.body && document.body.dataset && document.body.dataset.page;
+    if (page === 'app') return; // SPA router will call mount()
+    if (!$('import-text')) return; // not on the import view
+    mount();
+  });
 })();

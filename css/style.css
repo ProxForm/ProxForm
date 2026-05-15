@@ -2240,3 +2240,166 @@ html[data-theme="dark"] .footer-attribution { border-top-color: var(--accent); }
   body.printing-preview > * { display: none !important; }
   body.printing-preview > #print-container { display: block !important; }
 }
+
+/* ── Dashboard: sender + active sessions ─────────────────────────────── */
+
+.dash-section { margin-bottom: 2rem; }
+.dash-section h2 { margin-top: 0; }
+.dash-section h2 .small { font-size: 0.8rem; font-weight: normal; }
+
+.dash-sender {
+  border: 1px solid var(--border, #d8dadf);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  background: var(--card-bg, #f8f9fb);
+  margin-top: 0.75rem;
+}
+.dash-sender-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(180px, 1.4fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+.dash-sender-field span {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  color: var(--muted-fg, #5a6172);
+}
+.dash-sender-field select,
+.dash-sender-field input {
+  width: 100%;
+  box-sizing: border-box;
+}
+@media (max-width: 720px) {
+  .dash-sender-row { grid-template-columns: 1fr; }
+}
+
+.active-sessions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.active-sessions .empty {
+  padding: 1rem 1.1rem;
+  border: 1px dashed var(--border, #d8dadf);
+  border-radius: 10px;
+  margin: 0;
+}
+
+.session-card {
+  border: 1px solid var(--border, #d8dadf);
+  border-left: 4px solid var(--border, #d8dadf);
+  border-radius: 10px;
+  background: var(--card-bg, #ffffff);
+  overflow: hidden;
+}
+.session-card.state-waiting       { border-left-color: #d3a317; }
+.session-card.state-connecting    { border-left-color: #4a90e2; }
+.session-card.state-connected     { border-left-color: #2f9e44; }
+.session-card.state-disconnected  { border-left-color: #c0392b; }
+.session-card.state-submitted     { border-left-color: #5b6ee1; }
+.session-card.state-closed        { border-left-color: #999; opacity: 0.65; }
+
+.session-card-head {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1.4fr) minmax(0, 1.6fr) auto auto auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.9rem;
+}
+.session-card-toggle {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-size: 1rem;
+  width: 1.4rem;
+  color: var(--fg, #1a1d24);
+}
+.session-card-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  color: var(--muted-fg, #5a6172);
+}
+.session-card-label {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.session-card-title {
+  color: var(--muted-fg, #5a6172);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.session-card-sas {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+}
+.session-card-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-fg, #5a6172);
+  font-size: 0.85rem;
+}
+.session-card-state {
+  font-size: 0.8rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.05);
+  white-space: nowrap;
+}
+.session-card.state-connected    .session-card-state { background: rgba(47,158,68,0.15);  color: #1f7a30; }
+.session-card.state-waiting      .session-card-state { background: rgba(211,163,23,0.18); color: #8a6800; }
+.session-card.state-connecting   .session-card-state { background: rgba(74,144,226,0.18); color: #1e5a9e; }
+.session-card.state-disconnected .session-card-state { background: rgba(192,57,43,0.15);  color: #9c2a1f; }
+.session-card.state-submitted    .session-card-state { background: rgba(91,110,225,0.18); color: #3a48ad; }
+
+.session-card-body {
+  padding: 0.75rem 0.85rem 1rem;
+  border-top: 1px solid var(--border, #e3e5ea);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.session-card-body .readonly-field { margin: 0; }
+.session-card-body .copy-row { display: flex; gap: 0.4rem; }
+.session-card-body .copy-row input { flex: 1; min-width: 0; }
+.session-card-body textarea { width: 100%; box-sizing: border-box; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; }
+
+.card-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.card-preview {
+  border: 1px solid var(--border, #e3e5ea);
+  border-radius: 8px;
+  padding: 0.6rem;
+  background: var(--card-bg, #fbfbfc);
+  max-height: 360px;
+  overflow: auto;
+}
+.card-preview .patient-form { border: 0; padding: 0; box-shadow: none; }
+
+@media (max-width: 720px) {
+  .session-card-head {
+    grid-template-columns: auto auto 1fr;
+    grid-template-areas:
+      "toggle id state"
+      "label  label label"
+      "title  title title"
+      "sas    time time";
+  }
+  .session-card-toggle { grid-area: toggle; }
+  .session-card-id     { grid-area: id; }
+  .session-card-label  { grid-area: label; }
+  .session-card-title  { grid-area: title; }
+  .session-card-sas    { grid-area: sas; }
+  .session-card-time   { grid-area: time; text-align: right; }
+  .session-card-state  { grid-area: state; }
+}
+

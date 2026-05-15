@@ -9,14 +9,22 @@
   <meta name="robots" content="noindex">
   <link rel="icon" href="/icons/favicon.svg">
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/css/style.css?v=9">
-  <script src="/js/theme.js?v=9" defer></script>
-  <script src="/js/netcheck.js?v=9" defer></script>
-  <script src="/js/storage.js?v=9" defer></script>
-  <script src="/js/render.js?v=9" defer></script>
-  <script src="/js/builder.js?v=9" defer></script>
-  <script src="/js/footer.js?v=9" defer></script>
-  <script src="/js/analytics.js?v=9" defer></script>
+  <script>
+    // Legacy page — redirect to the SPA shell.
+    location.replace('/app.html#/received');
+  </script>
+  <link rel="stylesheet" href="/css/style.css?v=11">
+  <script src="/js/theme.js?v=11" defer></script>
+  <script src="/js/netcheck.js?v=11" defer></script>
+  <script src="/js/storage.js?v=11" defer></script>
+  <script src="/js/crypto.js?v=11" defer></script>
+  <script src="/js/p2p.js?v=11" defer></script>
+  <script src="/js/sessions.js?v=11" defer></script>
+  <script src="/js/render.js?v=11" defer></script>
+  <script src="/js/builder.js?v=11" defer></script>
+  <script src="/js/dashboard.js?v=11" defer></script>
+  <script src="/js/footer.js?v=11" defer></script>
+  <script src="/js/analytics.js?v=11" defer></script>
 </head>
 <body class="app-page received-page" data-page="received">
   <header class="topbar">
@@ -36,12 +44,38 @@
   </header>
 
   <main class="app-main">
-    <section class="step">
+    <section class="step dash-section">
       <div class="dash-head">
-        <h1>Received submissions</h1>
+        <h1>Inbox</h1>
       </div>
-      <p class="muted">Completed forms patients have sent back to you, newest first. Stored only on this device — close the browser data and they're gone.</p>
+      <p class="muted">Send a form to a patient and watch their reply land. Multiple sessions can run in parallel — each one is a card below. Nothing is on a server; everything lives in this tab until you close it (submissions persist on your device only).</p>
 
+      <div class="dash-sender">
+        <div class="dash-sender-row">
+          <label class="dash-sender-field">
+            <span>Form</span>
+            <select id="dash-form-select" title="Pick a saved form to send. Build new forms in the My forms page."></select>
+          </label>
+          <label class="dash-sender-field">
+            <span>Label (optional, stays on your device)</span>
+            <input id="dash-label" type="text" placeholder="e.g. Mrs. Smith — Tuesday">
+          </label>
+          <button id="dash-send" class="primary" type="button" title="Encrypt the form and create a fresh invite link + passphrase. Share the link by one channel and the passphrase by another.">Send invite <span class="arrow">→</span></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="step dash-section">
+      <h2>Active sessions <span class="muted small">(oldest first)</span></h2>
+      <p class="muted">Each card stays here until you end it or close the tab. Expand a card to see the live preview of the patient's answers as they type.</p>
+      <div id="active-sessions" class="active-sessions" aria-live="polite">
+        <p class="muted empty">No active sessions yet. Pick a form above and click <em>Send invite</em>.</p>
+      </div>
+    </section>
+
+    <section class="step dash-section">
+      <h2>Completed submissions <span class="muted small">(newest first)</span></h2>
+      <p class="muted">Submissions are stored on this device only. Clear your browser data and they're gone.</p>
       <div id="submissions-list" class="forms-list" aria-live="polite"></div>
     </section>
   </main>

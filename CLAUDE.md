@@ -30,24 +30,45 @@ There is **no build step**. Vanilla HTML/CSS/JS. Edit a file → commit → GitH
 
 ```
 /                    → Landing (index.html) — GDPR pitch, FAQ, JSON-LD
-/builder.html        → Clinician's form builder + session host (with live preview)
+/builder.html        → Form builder + (legacy) single-session host with live preview
+/forms.html          → Saved-forms list (open / duplicate / export / "From template…" / import)
+/import.html         → Standalone YAML / JSON import + validator (no save)
+/received.html       → Dashboard: parallel active sessions + completed submissions
 /fill.html           → Patient's form-fill app
+/gdpr.html           → GDPR claims consolidated on one page
+/404.html            → Pop-art 404 with "where you were probably trying to go" cards
 /css/style.css       → All styles (light/dark via [data-theme])
-/js/crypto.js        → PBKDF2 + AES-GCM + compression + base64 helpers
-/js/p2p.js           → WebRTC offer/answer + data channel setup + SAS
-/js/builder.js       → Form builder UI + clinician session host + live preview
-/js/fill.js          → Patient form rendering + answer submission + draft restore
+/js/crypto.js        → PBKDF2 + AES-GCM + compression + base64 + genNonce + computeSessionCode (SAS)
+/js/p2p.js           → WebRTC offer/answer + data channel setup
+/js/sessions.js      → ProxSessions: multi-session manager (create/connect/reconnect/end/sendCorrection + events)
+/js/dashboard.js     → /received.html "Active sessions" panel + Send-new-invite picker
+/js/builder.js       → Form builder UI + legacy single-session host + saved-forms + submissions rendering
+/js/fill.js          → Patient form rendering + answer submission + draft restore (sessionId-keyed)
 /js/render.js        → ProxRender: shared intake-form renderer (used by builder preview + fill page)
-/js/storage.js       → ProxStore: IndexedDB drafts (builder + fill), persistence + quota check
+/js/storage.js       → ProxStore: IndexedDB forms / builder drafts / fill drafts / submissions
 /js/netcheck.js      → ProxNet: WebRTC connectivity probe (STUN reachability badge)
 /js/footer.js        → Contact-email obfuscation (atob-built mailto)
 /js/analytics.js     → INERT GA4 loader — fires only if GA_ID is filled. Default off.
 /js/theme.js         → Dark/light toggle (localStorage: proxform_theme)
+/js/templates.js     → 5 industry starter forms surfaced by the "From template…" picker
+/js/import.js        → ProxImport: YAML-style + JSON parse / validate / pretty-print
+/js/cond.js          → ProxCond: showIf rule evaluation (live in fill + test-fill preview)
+/js/sig.js           → ProxSig: canvas signature pad widget (mouse / touch / stylus → base64 PNG)
+/js/bg.js            → Parallax background script used on landing + gdpr page
 /sw.js               → Service worker (network-first HTML/CSS/JS, cache-first images)
 /manifest.json       → PWA manifest
 /LICENSE             → Proprietary "all rights reserved" license
 /icons/favicon.svg   → Brand mark
 ```
+
+### Two session-host paths (transitional)
+
+There are currently **two** clinician session-host implementations in-tree:
+
+1. **Legacy single-session** in `js/builder.js` — drives the original step-share / step-live flow on `builder.html`. Owns module-scope globals (`pc`, `dc`, `answers`, file chunk buffers).
+2. **Multi-session manager** in `js/sessions.js` (`window.ProxSessions`) — used by `/received.html` via `js/dashboard.js` to run **N parallel patient sessions** as cards. Each record carries its own `pc`, `dc`, `answers`, `filesInProgress`, nonces. State machine: `waiting → connecting → connected → (disconnected ↔ connecting) → submitted → closed`. Submit-and-purge: on submit, the submission is persisted to IndexedDB and the in-memory `answers` are wiped from the session record so a stale row cannot be re-shared.
+
+Phase 2 (one SPA shell so navigating away from `received.html` doesn't tear down live sessions) is **deferred**. For now the clinic has to stay on `received.html` for parallel sessions to stay alive. **Don't merge the two paths in this phase** — the merge belongs in the SPA refactor.
 
 ## The protocol
 
@@ -56,17 +77,19 @@ There is **no build step**. Vanilla HTML/CSS/JS. Edit a file → commit → GitH
 3. **Out-of-band**: clinician shares the link via one channel (email, WhatsApp), the passphrase via another (SMS, phone). **Two-channel split is the security property** — not the AES itself.
 4. **Patient opens link** → enters passphrase → decrypts SDP → builds answer → encrypts answer → sends reply link back.
 5. **Clinician pastes reply** → connection completes → data channel opens.
-6. **On connect**: clinician sends `{ type: 'form', nonce, form: {...} }` over the channel. Patient renders it.
-7. **As patient types**: `{ type: 'answer-update', fieldId, value }` (throttled, 300 ms) for live preview on clinician side. On submit: `{ type: 'submit', answers: {...} }`.
+6. **On connect**: clinician sends `{ type: 'form', nonce, sessionId, form: {...} }` over the channel. Patient stores `sessionId` as its draft key and renders the form.
+7. **As patient types**: `{ type: 'answer-update', fieldId, value }` (throttled, 300 ms) for live preview on clinician side. On submit: `{ type: 'submit', answers: {...} }`. If the patient was already mid-fill when the form lands (reconnect / restored draft), they emit one `{ type: 'state-sync', answers }` so the clinician dashboard catches up (files become `_pendingFile` placeholders until re-uploaded).
 8. **Clinician downloads** the completed form locally (JSON / printable HTML). Nothing is stored on a server. When the tab closes, the data is gone unless they saved it.
 9. **Session verification (SAS)**: both sides see a short hex code derived from session nonces — read aloud to defend against MITM during the handshake.
 
 ## Local persistence (IndexedDB)
 
-`js/storage.js` exposes `window.ProxStore`. Two object stores in DB `proxform`:
+`js/storage.js` exposes `window.ProxStore`. Object stores in DB `proxform`:
 
-- `builder_drafts` — clinician's in-progress form (key: `'current'`). Restored on page load. Cleared via the **Clear draft** button.
-- `fill_drafts` — patient's in-progress answers (key: SHA-256 hash of the encrypted offer, first 8 bytes hex). Restored when the same form arrives over the channel. Cleared automatically on successful submit so PHI doesn't linger.
+- `forms` — clinician's saved forms (listed on `/forms.html`).
+- `builder_drafts` — clinician's in-progress form on the builder page (key: `'current'`). Restored on page load. Cleared via the **Clear draft** button.
+- `fill_drafts` — patient's in-progress answers, keyed by `sessionId` once known (falls back to a hash of the encrypted offer before the first `form` message). Restored when the same session arrives over the channel. Cleared on successful submit so PHI doesn't linger.
+- `submissions` — completed submissions received by the clinician on `/received.html`. Listed newest-first; each row offers View / Resend (blank) / Export JSON / Delete. **Resend (blank)** spawns a fresh blank correction portal — no answers from the original submission are carried over (wrong-row leak risk).
 
 `ProxStore.checkStorage()` runs on load and toasts a warning if IndexedDB is unavailable or free quota < 5 MB. `requestPersistence()` asks the browser to mark our origin's storage as persistent.
 
