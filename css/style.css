@@ -428,15 +428,89 @@ html { scroll-behavior: smooth; }
   display: grid; gap: 0.85rem; margin-top: 1.25rem;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 }
-/* Submissions render newest-first as a vertical log — easier to scan for
-   hospital staff watching tickets land in real time than a side-by-side
-   grid. Keeps the .forms-list card chrome, just stacks the cards. */
+/* Submissions render oldest-first as a vertical log — first-come-first-
+   serve queue ordering, easier to scan for hospital staff watching tickets
+   land in real time than a side-by-side grid. */
 #submissions-list {
   grid-template-columns: 1fr;
+  gap: 0.55rem;
+}
+#submissions-list .form-card.submission-card {
+  /* Tighter padding — every card should fit on one row on wide screens. */
+  padding: 0.7rem 1rem;
 }
 #submissions-list .form-card .row {
-  margin-top: 0.4rem;
+  margin-top: 0;
+  justify-content: flex-start;
 }
+
+/* Single-row card layout: name+meta on the left, action buttons on the
+   right, both vertically centred. Wraps to a stacked layout below 720px. */
+.submission-card .sub-card-row {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+}
+.submission-card .sub-card-info {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+.submission-card .sub-card-actions {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+/* Patient name as the hero — big enough to read from across the room
+   without leaning in. Meta line under it carries elapsed/ticket/form/date
+   in one compact row. */
+.submission-card .sub-hero-name {
+  font-size: 1.7rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0;
+  color: var(--text);
+  letter-spacing: -0.4px;
+  word-break: break-word;
+}
+.submission-card .sub-hero-sub {
+  margin-top: 0.15rem;
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.35;
+}
+.submission-card .sub-hero-sub .elapsed {
+  font-size: 0.9rem;
+  padding: 0 0.4rem;
+}
+/* Old h3 + old meta lines are gone — the hero handles everything. */
+.submission-card > h3,
+.submission-card .sub-meta-line { display: none; }
+
+@media (max-width: 720px) {
+  .submission-card .sub-card-row { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+  .submission-card .sub-card-actions { flex-wrap: wrap; }
+}
+
+/* Name shield: replace the patient name with asterisks via ::before so no
+   bytes of the real string ever land in the rendered DOM until the card is
+   hovered or unlocked. Reveal on hover (peek-without-state) OR when the
+   card has .revealed (Show-name click). Anonymous submissions render the
+   ticket directly and skip the shield. */
+.shielded-name {
+  user-select: none;
+  cursor: pointer;
+  letter-spacing: 0.15em;
+}
+.shielded-name::before { content: '*********'; }
+.submission-card:hover .shielded-name,
+.submission-card.revealed .shielded-name {
+  user-select: text;
+  cursor: auto;
+  letter-spacing: -0.4px;
+}
+.submission-card:hover .shielded-name::before,
+.submission-card.revealed .shielded-name::before { content: attr(data-real); }
 /* Elapsed-time badges — loud so hospital staff can scan the column for
    anything stale at a glance. Color comes from the theme accent so it
    reads as a primary signal, not a date. */
@@ -1782,20 +1856,17 @@ html[data-theme="dark"] body.home-page::before {
   color: var(--text, #111);
 }
 
-/* Shielded container: blur every answer cell, dim the labels. Pointer
-   events stay alive so the overlay can capture the unshield click. */
+/* Shielded container: answer text is swapped out for '***' in JS; labels
+   stay readable but dimmed so the form structure remains visible. The
+   overlay sits on top and captures the unshield click. */
 .prox-shielded { position: relative; }
-.prox-shielded .intake-cell .intake-answer,
-.prox-shielded .intake-answer,
-.prox-shielded input,
-.prox-shielded textarea,
-.prox-shielded .intake-num,
-.prox-shielded .file-thumb {
-  filter: blur(7px);
-  user-select: none;
-  pointer-events: none;
-}
 .prox-shielded .intake-label { color: var(--muted, #666); }
+.prox-shielded .prox-mask {
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--muted, #777);
+  user-select: none;
+}
 
 .prox-shield-overlay {
   position: absolute;
@@ -1952,11 +2023,252 @@ html[data-theme="dark"] .bg-mirror {
       rgba(20, 17, 10, 0.22) 50%,
       rgba(20, 17, 10, 0.00) 85%);
 }
+/* Home page layout — a comfortable 1400px column on desktop, full-bleed on
+   mobile, with the hero and CTA bands stretching edge-to-edge for visual
+   rhythm. The container width is sized for landing-page reading + showing
+   off cards: not so narrow it feels squeezed (the old 980px), not so wide
+   it looks like a spreadsheet. Sections inside main flow vertically with
+   strong padding rhythm; alternating subtle tints break visual monotony
+   without resorting to a separate band element per section. */
 body.home-page main {
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 0 1.25rem 4rem;
+  width: 100% !important;
+  max-width: min(95vw, 1500px) !important;
+  margin: 0 auto !important;
+  padding: 0 clamp(1.25rem, 3vw, 2.5rem) 0 !important;
+  box-sizing: border-box;
 }
+
+/* Section rhythm — generous vertical padding so each topic gets room to
+   breathe instead of cramming. Every other section gets a subtle tint
+   (with negative margin trick) so they alternate across the page. */
+body.home-page main > section {
+  padding: 4rem 0;
+  border-top: none;
+}
+body.home-page main > section.hero { padding-top: 5rem; }
+body.home-page main > section + section { border-top: 1px solid var(--border); }
+
+/* Hero — centered text block, bigger headline, more breathing room. */
+.home-page .hero {
+  text-align: center;
+}
+.home-page .hero h1 {
+  font-size: clamp(2.4rem, 6vw, 4.4rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin: 0.4rem auto 0.8rem;
+  max-width: 1100px;
+}
+.home-page .hero .lede {
+  max-width: 760px;
+  margin: 0 auto 1.5rem;
+  font-size: clamp(1.05rem, 1.4vw, 1.25rem);
+}
+.home-page .hero-cta { margin-top: 2rem; }
+
+/* Trust strip under the hero — five small chips that summarize the value
+   prop in one scannable line. Wraps to two rows on narrow screens. */
+.home-page .trust-strip {
+  list-style: none;
+  padding: 0;
+  margin: 2.5rem auto 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  max-width: 1100px;
+}
+.home-page .trust-strip li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface);
+  border: 2px solid var(--ink, #111);
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem 0.45rem 0.75rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  box-shadow: 2px 2px 0 var(--ink, #111);
+}
+.home-page .trust-strip .trust-mark { font-size: 1.05rem; }
+
+/* Section headings — consistent, slightly oversized for landing-page feel. */
+.home-page main > section > h2 {
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  letter-spacing: -0.015em;
+  margin-bottom: 0.6rem;
+  text-align: center;
+}
+.home-page main > section > .why-lede {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 800px;
+  margin-bottom: 2rem;
+}
+.home-page .faq details { max-width: 900px; margin-left: auto; margin-right: auto; }
+.home-page .why-list    { max-width: 1100px; margin-left: auto; margin-right: auto; }
+
+/* GDPR stats banner — replaces the old 4-card pillar grid. One horizontal
+   row of bold numbers separated by hairline dividers, with a single
+   descriptive sentence below. Reads "0 / 0 / 0 / 100%" in one glance
+   instead of asking the eye to scan through four narrow body-text cards. */
+.home-page .stats-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: clamp(0.5rem, 2vw, 2rem);
+  padding: 2rem 1rem;
+  background: var(--surface);
+  border: 3px solid var(--ink, #111);
+  border-radius: 18px;
+  box-shadow: 6px 6px 0 var(--ink, #111);
+  flex-wrap: wrap;
+}
+.home-page .stat {
+  text-align: center;
+  flex: 1 1 130px;
+  min-width: 130px;
+}
+.home-page .stat-num {
+  font-size: clamp(2.6rem, 5vw, 4rem);
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.home-page .stat-num .pct { font-size: 0.45em; vertical-align: super; margin-left: 0.05em; }
+.home-page .stat-label {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+  color: var(--text);
+}
+.home-page .stat-sep {
+  width: 1px;
+  height: 56px;
+  background: var(--border);
+}
+@media (max-width: 720px) {
+  .home-page .stat-sep { display: none; }
+}
+.home-page .pillar-tagline {
+  text-align: center;
+  max-width: 880px;
+  margin: 1.5rem auto 0;
+  font-size: 1.05rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+/* Card-grid sizing — every grid auto-fits with a sensible minimum so
+   they fill the container at any width. On a 1500px container the tile
+   grid lands 5 across, who-grid 4-5 across, how-steps 3 across. */
+.home-page .who-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+.home-page .flow-cards {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 1.4rem;
+}
+.home-page .how-steps {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+/* Two-card pitch — the entire selling proposition in one section. Left
+   card frames "like paper" (warm/cream), right card frames "GDPR-proof"
+   (red/accent). They stand alone, taller than other cards on the page,
+   so this is visually the loudest section after the hero. */
+.home-page .pitch-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+@media (max-width: 900px) {
+  .home-page .pitch-grid { grid-template-columns: 1fr; }
+}
+.home-page .pitch-card {
+  border: 3px solid var(--ink, #111);
+  border-radius: 18px;
+  box-shadow: 6px 6px 0 var(--ink, #111);
+  padding: 2rem 2.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.home-page .pitch-card.pitch-paper {
+  background: var(--surface-2, #fcf7e0);
+  color: var(--text);
+}
+.home-page .pitch-card.pitch-gdpr {
+  background: var(--primary, #e30613);
+  color: #fff;
+}
+.home-page .pitch-card.pitch-gdpr .pitch-aside { color: rgba(255, 255, 255, 0.85); }
+.home-page .pitch-tag {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.7rem;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+}
+.home-page .pitch-card.pitch-paper .pitch-tag { background: var(--accent, #fcd116); color: var(--ink, #111); border-color: var(--ink, #111); }
+.home-page .pitch-card.pitch-gdpr  .pitch-tag { background: #fff; color: var(--primary, #e30613); border-color: #fff; }
+.home-page .pitch-card h2 {
+  margin: 0;
+  font-size: clamp(1.6rem, 2.5vw, 2.1rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-align: left;
+}
+.home-page .pitch-card p {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.55;
+}
+.home-page .pitch-card .pitch-aside {
+  font-size: 0.92rem;
+  font-style: italic;
+  color: var(--muted);
+}
+.home-page .pitch-card em { font-style: italic; font-weight: 700; }
+
+@media (max-width: 640px) {
+  body.home-page main > section { padding: 2.5rem 0; }
+}
+
+/* Who tag — pill stays on one line. Long labels (Hospitality & Luxury
+   Retail, Wellness/Fitness/Personal Care) shrink their font instead of
+   wrapping ugly. */
+.home-page .who-tag {
+  white-space: nowrap;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.7rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* CTA band at the bottom — visually distinct so the final call-to-action
+   doesn't blur into the FAQ above it. */
+.home-page .cta {
+  text-align: center;
+  background: linear-gradient(180deg, transparent 0%, rgba(252, 209, 22, 0.08) 100%);
+  border-radius: 16px;
+  margin-top: 1.5rem;
+}
+.home-page .cta h2 { margin-bottom: 0.5rem; }
+.home-page .cta p  { color: var(--muted); margin-bottom: 1.5rem; }
 
 .visually-hidden {
   position: absolute !important; width: 1px; height: 1px;
@@ -2063,6 +2375,89 @@ body.home-page main {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   margin-top: 1.25rem;
 }
+
+/* ── "What it does" feature showcase ────────────────────────────────── */
+
+.features { padding: 2.5rem 0; border-top: 1px solid var(--border); }
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-top: 1.4rem;
+}
+.feature-card {
+  background: var(--surface);
+  border: 2px solid var(--ink, #111);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.3rem 1.1rem;
+  box-shadow: 4px 4px 0 var(--ink, #111);
+}
+.feature-card h3 {
+  margin: 0 0 0.55rem;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+}
+.feature-card h3 .feature-num {
+  display: inline-block;
+  background: var(--accent, #fcd116);
+  color: var(--ink, #111);
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 6px;
+  border: 2px solid var(--ink, #111);
+  min-width: 1.3rem;
+  text-align: center;
+}
+.feature-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.feature-card ul li {
+  position: relative;
+  padding-left: 1.1rem;
+  font-size: 0.92rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+.feature-card ul li::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--primary, #e30613);
+  font-weight: 700;
+}
+.feature-card strong { color: var(--primary, #e30613); }
+
+/* Headline-style cards used at the bottom of the feature section to
+   surface the hospital-flow features (queue, shield, end-shift). */
+.flow-cards {
+  display: grid;
+  gap: 0.95rem;
+  margin-top: 1.4rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+.flow-card {
+  background: var(--accent, #fcd116);
+  color: var(--ink, #111);
+  border: 2px solid var(--ink, #111);
+  border-radius: 12px;
+  padding: 1rem 1.15rem;
+  box-shadow: 4px 4px 0 var(--ink, #111);
+}
+.flow-card h4 {
+  margin: 0 0 0.3rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+.flow-card p { margin: 0; font-size: 0.92rem; line-height: 1.4; }
 .who-card {
   background: var(--surface);
   border: 1.5px solid var(--border);

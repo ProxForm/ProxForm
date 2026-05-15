@@ -45,6 +45,14 @@
       "End-to-end encrypted (PBKDF2 + AES-GCM, DTLS 1.3)",
       "Two-channel out-of-band passphrase sharing",
       "Session verification (SAS) to defend against MITM",
+      "Multi-session dashboard with DMV-ticket queueing",
+      "Auto privacy shield masks PHI after idle (30 s — 5 min)",
+      "End-shift wipe clears every patient record in one click",
+      "Sessions survive tab switches and page reloads",
+      "5 industry templates (medical, legal, hospitality, HR, wellness)",
+      "Conditional logic, multi-page forms, file/photo/signature fields",
+      "Paper-style PDF export with patient answers inline",
+      "YAML and JSON import-export",
       "No accounts, no cookies, no analytics"
     ]
   }
@@ -92,7 +100,7 @@
         "name": "What about HIPAA?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "ProxForm is designed around GDPR principles. HIPAA is a separate US regulatory framework with its own requirements (BAAs, audit logs, etc.). The same zero-data-at-rest architecture is favorable under HIPAA too, but we do not market ProxForm as a HIPAA-compliant solution."
+          "text": "ProxForm is not marketed as a HIPAA-compliant SaaS because under HIPAA's conduit exception we are not a Business Associate — patient data never touches Artivicolab infrastructure. The covered entity (clinic) remains responsible for their HIPAA program. Full details, including a HIPAA Security Rule technical-safeguards mapping, are at /hipaa.html."
         }
       },
       {
@@ -138,32 +146,28 @@
         <a class="primary big" href="/app.html#/build">Build a form — free <span class="arrow">→</span></a>
       </div>
       <p class="micro">No account. No DPA needed. Works in any modern browser.</p>
+
+      <ul class="trust-strip" aria-label="Key guarantees">
+        <li><span class="trust-mark">📄</span><span>Like paper, in a browser</span></li>
+        <li><span class="trust-mark">🔒</span><span>End-to-end encrypted</span></li>
+        <li><span class="trust-mark">🚫</span><span>Zero PHI on any server</span></li>
+      </ul>
     </section>
 
     <section class="gdpr-pillars">
       <h2 class="visually-hidden">GDPR by architecture</h2>
-      <div class="pillar-grid">
-        <div class="pillar">
-          <div class="pillar-num">0</div>
-          <div class="pillar-label">Servers</div>
-          <p>Nothing of yours runs on our infrastructure — because there is no infrastructure.</p>
-        </div>
-        <div class="pillar">
-          <div class="pillar-num">0</div>
-          <div class="pillar-label">PHI on our servers</div>
-          <p>We have no servers, so we can't hold patient data. Submissions live only on the clinician's own device — like a paper file in their cabinet.</p>
-        </div>
-        <div class="pillar">
-          <div class="pillar-num">0</div>
-          <div class="pillar-label">Processors</div>
-          <p>No backend, no logging, no email server. Patient data never touches a third party.</p>
-        </div>
-        <div class="pillar">
-          <div class="pillar-num">100<span class="pct">%</span></div>
-          <div class="pillar-label">In your browser</div>
-          <p>The whole app is HTML, CSS, and JavaScript — auditable in your browser. No hidden backend, nothing phoning home.</p>
-        </div>
+      <div class="stats-banner">
+        <div class="stat"><div class="stat-num">0</div><div class="stat-label">Servers</div></div>
+        <div class="stat-sep" aria-hidden="true"></div>
+        <div class="stat"><div class="stat-num">0</div><div class="stat-label">PHI&nbsp;at&nbsp;rest</div></div>
+        <div class="stat-sep" aria-hidden="true"></div>
+        <div class="stat"><div class="stat-num">0</div><div class="stat-label">Processors</div></div>
+        <div class="stat-sep" aria-hidden="true"></div>
+        <div class="stat"><div class="stat-num">100<span class="pct">%</span></div><div class="stat-label">In&nbsp;your&nbsp;browser</div></div>
       </div>
+      <p class="pillar-tagline">
+        No servers. No third-party processors. No PHI at rest. The entire app is HTML, CSS, and JavaScript — auditable in your browser, nothing phoning home. The GDPR risk surface eliminated by architecture, not policy.
+      </p>
     </section>
 
     <section id="how" class="how">
@@ -171,7 +175,7 @@
       <ol class="how-steps">
         <li>
           <h3>1. Build the form</h3>
-          <p>Add the questions you need — text, choices, dates, sections. Live preview as you build. Nothing is saved on a server.</p>
+          <p>Pick a template or build from scratch — text, choices, dates, sections, files, signatures, multi-page, conditional logic. Live preview as you build. Nothing is saved on a server.</p>
         </li>
         <li>
           <h3>2. Share two things, two ways</h3>
@@ -179,34 +183,63 @@
         </li>
         <li>
           <h3>3. Patient fills, you receive</h3>
-          <p>Their browser connects directly to yours. Answers appear in your tab live as they type. Save locally if you want a copy.</p>
+          <p>Their browser connects directly to yours. Answers appear in your dashboard live as they type. Save locally, print to PDF, or End Shift to wipe.</p>
         </li>
       </ol>
     </section>
 
+    <section id="pitch" class="pitch">
+      <div class="pitch-grid">
+        <div class="pitch-card pitch-paper">
+          <div class="pitch-tag">Like paper</div>
+          <h2>It just works like a paper form.</h2>
+          <p>No account. No cloud account to manage. No SaaS overhead. Build a form, hand it to your patient, get it back filled. The whole thing lives in a browser tab — same way a clipboard lives on a desk.</p>
+          <p class="pitch-aside">When the tab closes, it's like putting the clipboard in a drawer. Nothing to log in to next time. Nothing to upload. Nothing waiting on someone else's server.</p>
+        </div>
+        <div class="pitch-card pitch-gdpr">
+          <div class="pitch-tag">GDPR-proof</div>
+          <h2>And nothing to breach.</h2>
+          <p>The data never touches our servers because there are no servers. Patient answers travel browser-to-browser, end-to-end encrypted, and stay on your device — exactly like a paper file in your own cabinet.</p>
+          <p class="pitch-aside">Not "GDPR-compliant." GDPR-<em>proof</em>. The risk surface is removed by architecture, not papered over with a Data Processing Agreement.</p>
+        </div>
+      </div>
+    </section>
+
     <section id="who" class="who">
-      <h2>Built for medical — useful anywhere intake stays private</h2>
-      <p class="why-lede">The same zero-data-at-rest architecture earns its keep in any industry where the question isn't "can we trust your servers?" but "do you even have any?"</p>
+      <h2>Who it's built for</h2>
+      <p class="why-lede">Built for medical intake — useful anywhere a paper clipboard already works. If the answer to "can we trust your cloud?" is "you don't have one?" you're in the right place.</p>
       <div class="who-grid">
         <div class="who-card">
           <div class="who-tag">Medical &amp; Clinical</div>
-          <p>Patient intake, pre-appointment questionnaires, telehealth screening, in-clinic consent forms — the original use case.</p>
+          <p><strong>Pre-appointment intake</strong>, telehealth screening, in-clinic consent, post-procedure follow-up. Templates for new-patient forms, allergy reviews, history questionnaires — the original use case, GDPR-proof out of the box.</p>
+        </div>
+        <div class="who-card">
+          <div class="who-tag">Dental, Optical &amp; Allied Health</div>
+          <p><strong>New-patient questionnaires</strong>, anesthesia history, dental hygiene assessments, eyewear prescriptions. Same architecture, same shielded handoff at reception.</p>
         </div>
         <div class="who-card">
           <div class="who-tag">Legal, Notary &amp; Government</div>
-          <p>Law-firm client intake, on-site notary identity verification, municipal license and zoning applications — sensitive personal data without a cloud-storage paper trail.</p>
+          <p><strong>Law-firm client intake</strong>, on-site notary identity verification, municipal license and zoning applications. Sensitive personal data without a cloud-storage paper trail.</p>
         </div>
         <div class="who-card">
           <div class="who-tag">Hospitality &amp; Luxury Retail</div>
-          <p>Boutique hotel check-in, luxury auto test-drive paperwork, VIP event and gala registration — passport scans and signatures straight to the desk browser, no third party in between.</p>
+          <p><strong>Boutique hotel check-in</strong>, luxury auto test-drive paperwork, VIP event and gala registration. Passport scans and signatures straight to the desk browser, no third party in between.</p>
         </div>
         <div class="who-card">
           <div class="who-tag">HR &amp; Secure Corporate</div>
-          <p>On-site interview NDAs and background-check consent, visitor logs at defense and biotech facilities, contractor liability waivers — data that never touches the public internet.</p>
+          <p><strong>On-site interview NDAs</strong> and background-check consent, visitor logs at defense and biotech facilities, contractor liability waivers. Data that never touches the public internet.</p>
         </div>
         <div class="who-card">
           <div class="who-tag">Wellness, Fitness &amp; Personal Care</div>
-          <p>Tattoo and piercing medical histories, spa and aesthetics consent forms, climbing-gym and MMA injury waivers — high-liability paperwork archived locally on the studio's own device.</p>
+          <p><strong>Tattoo and piercing</strong> medical histories, spa and aesthetics consent forms, climbing-gym and MMA injury waivers. High-liability paperwork archived locally on the studio's own device.</p>
+        </div>
+        <div class="who-card">
+          <div class="who-tag">Veterinary</div>
+          <p><strong>New-pet intake</strong>, surgical consent, emergency-clinic triage. Owners fill on their phone in the waiting room, the form lands on the receptionist's browser — no cloud vendor sees a single record.</p>
+        </div>
+        <div class="who-card">
+          <div class="who-tag">NGO, Field Research &amp; Crisis</div>
+          <p><strong>Aid-distribution registration</strong>, on-the-ground research surveys, refugee or asylum-intake interviews. Works in low-trust environments where data sovereignty is the whole point.</p>
         </div>
       </div>
     </section>
@@ -244,11 +277,27 @@
       </details>
       <details>
         <summary>What about HIPAA?</summary>
-        <p>ProxForm is designed around GDPR principles. HIPAA is a separate US framework with its own requirements (BAAs, audit logs). The same zero-data-at-rest architecture is favorable under HIPAA, but we do not market ProxForm as a HIPAA-compliant solution.</p>
+        <p>Under HIPAA's <strong>conduit exception</strong>, Artivicolab is not a Business Associate — patient data never touches our infrastructure, so we have no persistent access to PHI. The clinic remains the covered entity for the data it collects through ProxForm. We don't market ProxForm as "HIPAA-compliant SaaS" because that label assumes a relationship that doesn't exist here. <a href="/hipaa.html">Full HIPAA position, including a Security Rule technical-safeguards mapping →</a></p>
       </details>
       <details>
         <summary>Does ProxForm cost anything?</summary>
         <p>ProxForm runs entirely in your browser with no accounts and no analytics. Pricing for clinical use will be announced — early users can contact Artivicolab for access.</p>
+      </details>
+      <details>
+        <summary>Can I handle multiple patients at the same time?</summary>
+        <p>Yes. The Portal supports parallel sessions — fire as many invites as you need, each lands as its own card in a first-come queue with a DMV-style ticket label (1A, 2A, …). Replies trickle back independently. Live previews stream into their own cards as patients type.</p>
+      </details>
+      <details>
+        <summary>What happens if I reload the dashboard or close the tab?</summary>
+        <p>Active invites are remembered as <em>dormant</em> cards in the next session. The previous WebRTC connection is dead (no JS can survive a reload), but clicking <em>Reopen</em> mints a fresh link + passphrase under the same session ID. If the patient was mid-fill, their draft auto-restores when they open the new link.</p>
+      </details>
+      <details>
+        <summary>What's the "privacy shield"?</summary>
+        <p>Two automatic layers: (1) every patient name on the Portal blurs to <code>***</code> by default — hover to peek or click <em>Show</em> to unlock for a few minutes; (2) inside a submission, every answer auto-masks with <code>***</code> after 30 s – 5 min of inactivity (configurable, never off). It's the "data at rest, on your own screen" defense — designed for shared clinic devices.</p>
+      </details>
+      <details>
+        <summary>How do I clean the device at the end of a shift?</summary>
+        <p>One button on the Portal: <em>End shift — wipe patient data</em>. Confirms with an explicit warning, then deletes every submission, every dormant invite, every patient draft. Your form templates and your shield/theme preferences stay. Next person at the device starts at ticket 1A on a clean inbox.</p>
       </details>
     </section>
 
@@ -265,6 +314,7 @@
       <nav class="footer-nav">
         <a href="/#how">How it works</a>
         <a href="/gdpr.html">Why GDPR-proof</a>
+        <a href="/hipaa.html">HIPAA</a>
         <a href="/#faq">FAQ</a>
         <button id="contact-btn" type="button" class="link-btn">Contact us</button>
       </nav>

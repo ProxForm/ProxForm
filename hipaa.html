@@ -1,0 +1,172 @@
+<!doctype html>
+<!-- © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ProxForm under HIPAA — the conduit position & Security Rule mapping | ProxForm</title>
+  <meta name="description" content="How ProxForm fits into a US covered entity's HIPAA program. The conduit-exception position, Security Rule technical safeguards mapping, and what falls to the clinic.">
+  <meta name="theme-color" content="#e30613">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://proxform.com/hipaa.html">
+
+  <link rel="icon" href="/icons/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css?v=11">
+  <script src="/js/theme.js?v=11" defer></script>
+  <script src="/js/netcheck.js?v=11" defer></script>
+  <script src="/js/bg.js?v=11" defer></script>
+  <script src="/js/footer.js?v=11" defer></script>
+  <script src="/js/analytics.js?v=11" defer></script>
+  <script defer>window.addEventListener('DOMContentLoaded', () => ProxNet.checkAndDisplay('net-status'));</script>
+</head>
+<body class="home-page">
+  <div class="bg-mirror" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="/">ProxForm</a>
+    <nav class="topnav" aria-label="Primary navigation">
+      <a href="/">Home</a>
+      <a href="/app.html#/received">Portal</a>
+      <a href="/app.html#/build">Build</a>
+      <a href="/app.html#/forms">My forms</a>
+      <a href="/app.html#/import">Import</a>
+    </nav>
+    <div class="topbar-actions">
+      <span id="net-status" class="net-status net-checking" title="Checking whether your network can make direct peer-to-peer connections to a patient.">Checking…</span>
+      <span id="conn-status" class="conn-status" title="Status of the active peer-to-peer session, if one is open.">Not connected</span>
+      <a class="text-btn" href="/app.html#/build" title="Open the form builder">Build a form</a>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Switch between light and dark">◐</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="gdpr-badge" aria-label="HIPAA-friendly architecture">
+        <span class="gdpr-badge-mark">HIPAA</span>
+        <span class="gdpr-badge-text">The conduit position, in one place</span>
+      </div>
+      <h1>ProxForm under <em>HIPAA</em></h1>
+      <p class="lede">We do not market ProxForm as a HIPAA-compliant product, because the question doesn't apply the way most SaaS vendors answer it. ProxForm never receives, stores, or processes Protected Health Information — so under the conduit exception we are <strong>not a Business Associate</strong>. This page lays out the position your compliance officer needs.</p>
+      <p class="micro" style="margin-top: 1rem;">Not legal advice. Use this as a starting point for a conversation with your HIPAA Privacy/Security Officer or counsel.</p>
+    </section>
+
+    <section class="gdpr-pillars">
+      <h2 class="visually-hidden">The four pillars under HIPAA</h2>
+      <div class="pillar-grid">
+        <div class="pillar">
+          <div class="pillar-num">0</div>
+          <div class="pillar-label">PHI on our infrastructure</div>
+          <p>Patient Health Information never touches Artivicolab servers. There are no Artivicolab servers in the PHI path.</p>
+        </div>
+        <div class="pillar">
+          <div class="pillar-num">0</div>
+          <div class="pillar-label">Persistent access</div>
+          <p>We have no ability to read, retain, or replay PHI even momentarily. The data is encrypted browser-to-browser; we cannot decrypt it.</p>
+        </div>
+        <div class="pillar">
+          <div class="pillar-num">0</div>
+          <div class="pillar-label">BAA required</div>
+          <p>Under the conduit exception, no Business Associate Agreement is needed between the covered entity and Artivicolab. We can issue one on request, but the legal default is "not a BA."</p>
+        </div>
+        <div class="pillar">
+          <div class="pillar-num">100<span class="pct">%</span></div>
+          <div class="pillar-label">On the covered entity</div>
+          <p>The clinic remains the covered entity for the PHI it collects through ProxForm — the same way a clinic using a paper clipboard is the covered entity for what's on the paper.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="why">
+      <h2>Why ProxForm is not a Business Associate</h2>
+      <p class="why-lede">HIPAA's definition of "business associate" at 45 CFR 160.103 includes entities that "create, receive, maintain, or transmit" PHI on behalf of a covered entity. HHS guidance carves out a <strong>conduit exception</strong> for entities that only transmit PHI without persistent access — examples cited include the US Postal Service, private couriers, and telecom carriers. ProxForm fits that pattern.</p>
+      <ul class="why-list">
+        <li><strong>No persistent access to PHI.</strong> Patient answers travel directly browser-to-browser over a WebRTC peer-to-peer data channel. Artivicolab is not a hop in the path — the link goes through the open internet, not through our infrastructure.</li>
+        <li><strong>No ability to decrypt.</strong> The handshake metadata is encrypted with a passphrase known only to the two peers. We have no key, no key escrow, no recovery path. Even if we could intercept traffic, we couldn't read it.</li>
+        <li><strong>No storage, transient or otherwise.</strong> ProxForm has no application server. There is nothing on our infrastructure to subpoena, to breach, to retain, or to leak.</li>
+        <li><strong>No service-side logging of PHI.</strong> We do not log who connected to whom, what passphrase was used, or what data was exchanged. There is nothing to log because we are not in the path.</li>
+        <li><strong>The covered entity controls the entire lifecycle.</strong> The clinic builds the form, generates the invite, shares the passphrase out-of-band, receives the answers in their own browser, and chooses whether to retain a local copy. Every step is under the clinic's control.</li>
+      </ul>
+      <p class="why-lede" style="margin-top: 1.25rem;">Closest precedent: a clinic using a fax machine, a paper courier, or a USB stick to move forms between desks. The hardware vendor is not a Business Associate.</p>
+    </section>
+
+    <section class="why">
+      <h2>HIPAA Security Rule technical-safeguards mapping</h2>
+      <p class="why-lede">Even though ProxForm is not a Business Associate, the architecture satisfies — or exceeds — every technical safeguard in the HIPAA Security Rule that a covered entity would need to evidence for the ProxForm portion of their workflow.</p>
+      <ul class="why-list">
+        <li><strong>§164.312(a)(1) Access Control.</strong> The clinic's existing endpoint controls (device lock screen, browser profile, MDM, idle timeout) gate access to ProxForm. ProxForm itself adds a <em>privacy shield</em> that masks patient data with <code>***</code> after configurable idle time (30 s – 5 min) — additional access control specific to PHI display.</li>
+        <li><strong>§164.312(a)(2)(iii) Automatic Logoff.</strong> ProxForm's idle privacy shield + the clinic's browser/OS lock together cover this. The shield engages on the application layer; the lock screen covers the device layer.</li>
+        <li><strong>§164.312(a)(2)(iv) Encryption and Decryption (addressable).</strong> PHI at rest on the clinician's device sits in IndexedDB — its at-rest encryption is governed by the device's existing controls (FileVault, BitLocker). PHI on our infrastructure: not applicable, as none exists.</li>
+        <li><strong>§164.312(b) Audit Controls.</strong> ProxForm does not log PHI access because it has no view into PHI access. The covered entity's existing audit infrastructure (EHR access logs, device login logs, network telemetry) covers HIPAA audit-control obligations for the activity that <em>does</em> happen on their devices. ProxForm offers an End-Shift action that wipes patient data with a single click — useful as a documented shift-change procedure.</li>
+        <li><strong>§164.312(c)(1) Integrity.</strong> AES-256-GCM authenticates the ciphertext during handshake (any tampering fails decryption). WebRTC DTLS 1.3 authenticates the data channel. The SAS verification code lets both endpoints confirm there's no person-in-the-middle.</li>
+        <li><strong>§164.312(d) Person-or-Entity Authentication.</strong> Two-channel out-of-band sharing authenticates the receiving party: the link goes through one channel, the passphrase through another. Possession of both implies the intended recipient. SAS provides additional human-verifiable proof during the handshake.</li>
+        <li><strong>§164.312(e)(1) Transmission Security.</strong> AES-256-GCM on handshake metadata (key derived from passphrase via PBKDF2 100k SHA-256). DTLS 1.3 on the WebRTC data channel itself. Both exceed the addressable encryption-in-transit standard.</li>
+      </ul>
+    </section>
+
+    <section class="why">
+      <h2>What stays on the covered entity (clinic)</h2>
+      <p class="why-lede">HIPAA's administrative and physical safeguards live with the covered entity — not with software vendors. ProxForm does not replace them.</p>
+      <ul class="why-list">
+        <li><strong>§164.308 Administrative Safeguards.</strong> Security management process, workforce training, sanction policies, contingency planning — these are organizational programs the clinic owns.</li>
+        <li><strong>§164.310 Physical Safeguards.</strong> Facility access controls, workstation security, device and media controls — these apply to the clinic's premises and hardware.</li>
+        <li><strong>§164.404 Breach Notification.</strong> If the clinic's device is lost, stolen, or compromised, the clinic's existing breach-notification procedures apply to whatever PHI was on that device. ProxForm has no separate breach to notify about — there is no Artivicolab system holding PHI to breach.</li>
+        <li><strong>Workforce training on the ProxForm workflow.</strong> Train staff on: how to send invites, the two-channel rule (link by email, passphrase by phone — never both in the same message), how to use the privacy shield, when to End Shift.</li>
+        <li><strong>Retention policies.</strong> Decide which local submissions to keep, for how long, and where. ProxForm provides Export JSON and Print/PDF for portable records.</li>
+      </ul>
+    </section>
+
+    <section class="why">
+      <h2>Cryptography &amp; transport detail</h2>
+      <ul class="why-list">
+        <li><strong>Key derivation.</strong> PBKDF2 with SHA-256, 100,000 iterations, derives a 256-bit key from the shared passphrase. A fresh random salt is generated per session.</li>
+        <li><strong>Handshake encryption.</strong> AES-256-GCM with a fresh 96-bit IV encrypts the SDP offer and answer carried in the URL fragment. The fragment never leaves the browser to an Artivicolab server — it's only visible to the two peers.</li>
+        <li><strong>Data-channel transport.</strong> WebRTC data channel over DTLS 1.3 (browser default), with SCTP framing. Both peers verify each other's DTLS fingerprints, which are themselves authenticated via the encrypted SDP exchange.</li>
+        <li><strong>Session verification (SAS).</strong> Each side generates a random nonce, exchanges it in the first data-channel message, then hashes both nonces together. The short hex code displayed on both screens must match — if they don't, abort.</li>
+        <li><strong>No long-term keys.</strong> Every session uses a fresh passphrase, fresh salt, fresh IVs, fresh nonces. Nothing is reused across sessions.</li>
+      </ul>
+    </section>
+
+    <section class="why">
+      <h2>What ProxForm is <em>not</em> under HIPAA</h2>
+      <ul class="why-list">
+        <li><strong>Not a HIPAA-compliant SaaS.</strong> We don't carry that label because we don't fit the SaaS mould — there's no service to make compliant.</li>
+        <li><strong>Not a substitute for an EHR.</strong> ProxForm transmits intake forms; it doesn't replace your records system. Move important submissions into your EHR using Export JSON or printed PDF.</li>
+        <li><strong>Not a long-term storage system.</strong> Submissions live on the clinician's own device. End-Shift wipes them on demand. Plan your retention separately.</li>
+        <li><strong>Not a substitute for legal advice.</strong> Your Privacy/Security Officer must still review ProxForm's fit into your HIPAA program. Use this page as the technical basis for that review.</li>
+      </ul>
+    </section>
+
+    <section class="why">
+      <h2>If your compliance officer wants a BAA anyway</h2>
+      <p class="why-lede">Some compliance teams ask for a Business Associate Agreement reflexively, even where the conduit exception applies. We will sign one on request — drafted to reflect the actual relationship (we don't access PHI, we don't store it, we don't transmit it through our infrastructure). Contact us through the link in the footer.</p>
+      <ul class="why-list">
+        <li><strong>Plain-language BAA</strong> available on request. Says what we do (provide the software) and what we don't (touch PHI). Sets out the few obligations that apply (notification if our software is shown to be the cause of an incident, cooperation with audits at your request).</li>
+        <li><strong>Security Rule mapping (this page)</strong> as the technical appendix to your HIPAA program documentation.</li>
+        <li><strong>Architecture letter</strong> on Artivicolab letterhead summarising the conduit-exception position, available on request for audit packets.</li>
+      </ul>
+    </section>
+
+    <section class="cta">
+      <h2>Need something for your audit?</h2>
+      <p>If your DPO or HIPAA Officer needs a written statement, a BAA copy, or a letter for the audit packet, use the Contact button in the footer.</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <p class="footer-tagline"><strong>Private by design.</strong> ProxForm is <em>GDPR-proof by architecture</em> and a <em>HIPAA conduit, not a Business Associate</em> — your patient's answers travel browser-to-browser, end-to-end encrypted. Like a sheet of paper, not a database.</p>
+      <nav class="footer-nav">
+        <a href="/#how">How it works</a>
+        <a href="/gdpr.html">Why GDPR-proof</a>
+        <a href="/hipaa.html">HIPAA position</a>
+        <a href="/#faq">FAQ</a>
+        <button id="contact-btn" type="button" class="link-btn">Contact us</button>
+      </nav>
+      <p class="footer-attribution">
+        ProxForm by <a href="https://artivicolab.com" target="_blank" rel="noopener">Artivicolab</a>
+        · Auditable · No accounts · No PHI on any server
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

@@ -12,6 +12,7 @@ const ASSETS = [
   '/received.html',
   '/fill.html',
   '/gdpr.html',
+  '/hipaa.html',
   '/import.html',
   '/404.html',
   '/css/style.css?v=11',

@@ -1532,6 +1532,42 @@ function shortId(id) {
   return id.replace(/^sub_/, '').replace(/-/g, '').slice(0, 8);
 }
 
+// Per-card name-reveal tracking. Each entry maps submissionId → setTimeout
+// handle for the auto-relock. The Map lives at module scope so renders that
+// happen during the unlock window (e.g. a new submission arrives) preserve
+// the visible state on cards the clinician had unlocked.
+const _cardUnlocks = new Map();
+function cssEscapeId(id) {
+  // CSS selector-safe id escape — only needed in the attribute-value
+  // selector form .card[data-id="..."]. Quote-stripping is enough.
+  return String(id).replace(/"/g, '\\"');
+}
+function revealCard(id) {
+  // Unlock duration follows the global shield preference — same window the
+  // clinician set for idle masking. Shield is always on (no Off option), so
+  // we always get a positive value back.
+  const duration = (window.ProxShield && ProxShield.readPref)
+    ? ProxShield.readPref()
+    : 2 * 60 * 1000;
+  const prev = _cardUnlocks.get(id);
+  if (prev) clearTimeout(prev);
+  const card = document.querySelector(`.submission-card[data-id="${cssEscapeId(id)}"]`);
+  if (card) card.classList.add('revealed');
+  const t = setTimeout(() => {
+    _cardUnlocks.delete(id);
+    const c = document.querySelector(`.submission-card[data-id="${cssEscapeId(id)}"]`);
+    if (c) c.classList.remove('revealed');
+  }, duration);
+  _cardUnlocks.set(id, t);
+}
+function hideCard(id) {
+  const prev = _cardUnlocks.get(id);
+  if (prev) clearTimeout(prev);
+  _cardUnlocks.delete(id);
+  const card = document.querySelector(`.submission-card[data-id="${cssEscapeId(id)}"]`);
+  if (card) card.classList.remove('revealed');
+}
+
 // Best-effort patient name extracted from the submitted answers. We look for
 // a text field whose label reads as a name field, prefer the most specific
 // match (full legal > full > generic 'name'), and fall back to first+last
@@ -1589,30 +1625,45 @@ async function renderSubmissions() {
       !(Array.isArray(s.answers[f.id]) && !s.answers[f.id].length)).length;
     const total = fields.filter(f => f.type !== 'section').length;
     const senderName = extractSenderName(s.formSnapshot, s.answers);
-    const senderText = senderName
-      ? `${escapeHtml(senderName)} <span class="muted">· #${escapeHtml(s.senderLabel || shortId(s.id))}</span>`
-      : (s.senderLabel ? escapeHtml(s.senderLabel) : '');
-    const senderLine = senderText
-      ? `<div class="meta sub-sender"><strong>From:</strong> ${senderText}</div>`
-      : '';
+    const ticket = s.senderLabel || ('#' + shortId(s.id));
+    // Hero line: the patient's name when we can pull one, otherwise the
+    // ticket label as a fallback so the card still shouts something across
+    // the room. When we have a name, the element renders empty and CSS
+    // ::before paints "********" by default, swapping in attr(data-real) on
+    // hover or when the card has the .revealed class.
+    const heroName = senderName || ticket;
+    const heroClass = senderName ? 'sub-hero-name shielded-name' : 'sub-hero-name';
+    const heroAttrs = senderName ? ` data-real="${escapeHtml(heroName)}"` : '';
+    const heroText  = senderName ? '' : escapeHtml(heroName);
     return `
       <div class="form-card submission-card" data-id="${escapeHtml(s.id)}">
-        <h3>${escapeHtml(s.formTitle || 'Untitled form')}</h3>
-        ${senderLine}
-        <div class="meta">
-          <strong class="elapsed" data-elapsed="${s.receivedAt}">${escapeHtml(fmtElapsed(s.receivedAt))}</strong>
-          <span class="muted"> · ${answered}/${total} answered · received ${fmtDateTime(s.receivedAt)}</span>
-        </div>
-        <div class="meta sub-id" title="Submission ID">#${escapeHtml(shortId(s.id))}</div>
-        <div class="row">
-          <a class="primary" href="${window.ProxRouter ? '#/submission/' + encodeURIComponent(s.id) : '/builder.html?submission=' + encodeURIComponent(s.id)}">View</a>
-          <button class="secondary" data-sub-act="resend" data-id="${escapeHtml(s.id)}" type="button" title="Open a new blank portal for this patient to refill — no previous answers are carried over.">Resend (blank)</button>
-          <button class="secondary" data-sub-act="export" data-id="${escapeHtml(s.id)}" type="button">Export JSON</button>
-          <button class="secondary" data-sub-act="delete" data-id="${escapeHtml(s.id)}" type="button">Delete</button>
+        <div class="sub-card-row">
+          <div class="sub-card-info">
+            <div class="${heroClass}"${heroAttrs}>${heroText}</div>
+            <div class="sub-hero-sub">
+              <strong class="elapsed" data-elapsed="${s.receivedAt}">${escapeHtml(fmtElapsed(s.receivedAt))}</strong>
+              <span class="muted"> · ${escapeHtml(ticket)} · ${escapeHtml(s.formTitle || 'Untitled form')} · ${answered}/${total} answered · ${escapeHtml(fmtDateTime(s.receivedAt))} · #${escapeHtml(shortId(s.id))}</span>
+            </div>
+          </div>
+          <div class="row sub-card-actions">
+            <a class="primary" href="${window.ProxRouter ? '#/submission/' + encodeURIComponent(s.id) : '/builder.html?submission=' + encodeURIComponent(s.id)}">View</a>
+            ${senderName ? `<button class="secondary" data-sub-act="reveal" data-id="${escapeHtml(s.id)}" type="button" title="Show this patient's name for the auto-shield duration.">👁 Show</button>` : ''}
+            <button class="secondary" data-sub-act="resend" data-id="${escapeHtml(s.id)}" type="button" title="Open a new blank portal for this patient to refill.">Resend</button>
+            <button class="secondary" data-sub-act="export" data-id="${escapeHtml(s.id)}" type="button">Export</button>
+            <button class="secondary" data-sub-act="delete" data-id="${escapeHtml(s.id)}" type="button">Delete</button>
+          </div>
         </div>
       </div>
     `;
   }).join('');
+
+  // Restore reveal state for cards the clinician had unlocked before a
+  // re-render (e.g. when a new submission arrives and renderSubmissions
+  // fires again). _cardUnlocks lives at module scope and survives renders.
+  for (const id of _cardUnlocks.keys()) {
+    const card = root.querySelector(`.submission-card[data-id="${cssEscapeId(id)}"]`);
+    if (card) card.classList.add('revealed');
+  }
 
   root.querySelectorAll('button[data-sub-act]').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -1636,6 +1687,15 @@ async function renderSubmissions() {
         a.download = (slug(sub.formTitle) || 'submission') + '-' + shortId(sub.id) + '.json';
         a.click();
         URL.revokeObjectURL(a.href);
+      } else if (act === 'reveal') {
+        const card = document.querySelector(`.submission-card[data-id="${cssEscapeId(id)}"]`);
+        if (card && card.classList.contains('revealed')) {
+          hideCard(id);
+          btn.textContent = '👁 Show name';
+        } else {
+          revealCard(id);
+          btn.textContent = '🙈 Hide';
+        }
       } else if (act === 'resend') {
         if (!window.ProxSessions) { toast('Session module not loaded yet — try again in a moment'); return; }
         try {

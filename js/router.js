@@ -22,7 +22,8 @@
     submission: { src: '/builder.html',  view: () => window.ProxSubmissionView },
     // Static content views — no JS interaction needed, just the fragment.
     home:       { src: '/index.html',    view: () => null },
-    gdpr:       { src: '/gdpr.html',     view: () => null }
+    gdpr:       { src: '/gdpr.html',     view: () => null },
+    hipaa:      { src: '/hipaa.html',    view: () => null }
   };
 
   const DEFAULT_ROUTE = 'received';
@@ -69,7 +70,8 @@
     forms:      'forms-page',
     import:     'import-page',
     home:       'home-page',
-    gdpr:       'home-page'
+    gdpr:       'home-page',
+    hipaa:      'home-page'
   };
   const ALL_PAGE_CLASSES = ['received-page', 'builder-page', 'forms-page', 'import-page', 'home-page'];
 
