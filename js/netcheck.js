@@ -19,7 +19,7 @@ async function check() {
 
   if (typeof RTCPeerConnection === 'undefined') {
     r.state = 'unsupported';
-    r.message = 'WebRTC not supported in this browser';
+    r.message = 'WebRTC not supported — your browser cannot make peer-to-peer connections. Try Chrome, Firefox, Safari, or Edge.';
     return r;
   }
   r.supported = true;
@@ -28,7 +28,7 @@ async function check() {
   try { pc = new RTCPeerConnection({ iceServers: NET_ICE_SERVERS }); }
   catch (_) {
     r.state = 'blocked';
-    r.message = 'WebRTC blocked by browser policy';
+    r.message = 'WebRTC is blocked by your browser policy or an extension. Disable any privacy extensions blocking WebRTC and reload.';
     return r;
   }
 
@@ -45,13 +45,13 @@ async function check() {
 
       if (r.srflx) {
         r.state = 'ok';
-        r.message = 'Direct P2P should work — STUN reachable, NAT mapping found';
+        r.message = 'P2P ready — your browser can connect directly to a patient over the internet. Answers travel peer-to-peer, never through a server.';
       } else if (r.host) {
         r.state = 'limited';
-        r.message = 'Local network only — outbound UDP to STUN appears blocked. P2P will likely fail across networks (firewall/VPN/restrictive Wi-Fi).';
+        r.message = 'Local network only — your network or VPN is blocking the path we need to reach a patient outside this network. P2P will work over a LAN but probably fail over the internet. Try a different network or disable the VPN.';
       } else {
         r.state = 'blocked';
-        r.message = 'No ICE candidates gathered — UDP appears fully blocked';
+        r.message = 'Connection blocked — your network is blocking all outbound UDP, which WebRTC needs. P2P is not possible from here. Try a different network (mobile hotspot, home Wi-Fi).';
       }
       resolve(r);
     };

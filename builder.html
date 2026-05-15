@@ -9,17 +9,19 @@
   <meta name="robots" content="noindex">
   <link rel="icon" href="/icons/favicon.svg">
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/css/style.css?v=7">
-  <script src="/js/theme.js?v=7" defer></script>
-  <script src="/js/storage.js?v=7" defer></script>
-  <script src="/js/netcheck.js?v=7" defer></script>
-  <script src="/js/crypto.js?v=7" defer></script>
-  <script src="/js/p2p.js?v=7" defer></script>
-  <script src="/js/render.js?v=7" defer></script>
-  <script src="/js/import.js?v=7" defer></script>
-  <script src="/js/builder.js?v=7" defer></script>
-  <script src="/js/footer.js?v=7" defer></script>
-  <script src="/js/analytics.js?v=7" defer></script>
+  <link rel="stylesheet" href="/css/style.css?v=8">
+  <script src="/js/theme.js?v=8" defer></script>
+  <script src="/js/storage.js?v=8" defer></script>
+  <script src="/js/netcheck.js?v=8" defer></script>
+  <script src="/js/crypto.js?v=8" defer></script>
+  <script src="/js/p2p.js?v=8" defer></script>
+  <script src="/js/render.js?v=8" defer></script>
+  <script src="/js/cond.js?v=8" defer></script>
+  <script src="/js/sig.js?v=8" defer></script>
+  <script src="/js/import.js?v=8" defer></script>
+  <script src="/js/builder.js?v=8" defer></script>
+  <script src="/js/footer.js?v=8" defer></script>
+  <script src="/js/analytics.js?v=8" defer></script>
 </head>
 <body class="app-page builder-page">
   <header class="topbar">
@@ -31,10 +33,10 @@
       <a href="/received.html">Received</a>
     </nav>
     <div class="topbar-actions">
-      <span id="net-status" class="net-status net-checking" title="Checking outbound connectivity to STUN…">Checking…</span>
-      <span id="conn-status" class="conn-status">Not connected</span>
-      <a class="text-btn" href="/builder.html">Build a form</a>
-      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
+      <span id="net-status" class="net-status net-checking" title="Checking whether your network can make direct peer-to-peer connections to a patient. Hover the badge once it updates for details.">Checking…</span>
+      <span id="conn-status" class="conn-status" title="Status of the active peer-to-peer session, if one is open. Stays 'Not connected' until you generate a link and a patient joins.">Not connected</span>
+      <a class="text-btn" href="/builder.html" title="Open the form builder">Build a form</a>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Switch between light and dark">◐</button>
     </div>
   </header>
 
@@ -43,7 +45,44 @@
     <!-- Step 1: build the form -->
     <section id="step-build" class="step hidden">
       <a href="/forms.html" class="back-link">← All forms</a>
-      <h1>Build the form</h1>
+      <div class="step-head">
+        <h1>Build the form</h1>
+        <span id="save-indicator" class="save-indicator save-clean" aria-live="polite" title="Drafts are saved in this browser only — never on a server.">✓ Saved</span>
+      </div>
+
+      <section class="builder-jumbo" id="builder-jumbo">
+        <div class="builder-jumbo-head">
+          <span class="builder-jumbo-tag">How this works</span>
+          <h2 class="builder-jumbo-headline">Build → share two things → patient fills</h2>
+          <button id="btn-jumbo-toggle" class="icon-btn" type="button" aria-label="Show or hide the explainer" title="Show or hide">▾</button>
+        </div>
+        <div class="builder-jumbo-body">
+          <p class="builder-jumbo-lede">The form lives in this browser only. When you're ready, generate an invite link and a one-time passphrase, then share each through a different channel. The patient's browser connects directly to yours — answers travel peer-to-peer, end-to-end encrypted. Nothing touches a server.</p>
+          <ol class="builder-jumbo-steps">
+            <li>
+              <div class="builder-jumbo-num">1</div>
+              <h3>Build</h3>
+              <p>Add the questions you need. The live preview on the right shows exactly what the patient will see.</p>
+            </li>
+            <li>
+              <div class="builder-jumbo-num">2</div>
+              <h3>Generate</h3>
+              <p>Click <em>Generate link</em>. ProxForm creates an encrypted invite link and a random passphrase.</p>
+            </li>
+            <li>
+              <div class="builder-jumbo-num">3</div>
+              <h3>Share two ways</h3>
+              <p>Send the link by email or chat. Send the passphrase by SMS or phone. The two-channel split is the security property.</p>
+            </li>
+            <li>
+              <div class="builder-jumbo-num">4</div>
+              <h3>Receive</h3>
+              <p>The patient's browser connects directly to yours. Answers stream in live; submissions stay on this device only.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
       <p class="muted">Add the questions you want your patient to answer. Nothing is saved on a server — this lives in your browser only.</p>
 
       <div class="builder-layout">
@@ -57,25 +96,44 @@
               <span>Short description (optional)</span>
               <textarea id="form-desc" rows="2" placeholder="e.g. Please fill this before your visit on Tuesday."></textarea>
             </label>
+            <label class="sub inline" title="Adds 1., 2., 3.… before each question (sections aren't counted).">
+              <input id="form-numbered" type="checkbox">
+              <span>Auto-number questions in the patient view</span>
+            </label>
           </div>
 
+          <div class="fields-toolbar">
+            <div class="fields-toolbar-left">
+              <button id="btn-undo" class="chip" type="button" disabled title="Undo last add / remove / move / duplicate (⌘Z)">↶ Undo</button>
+              <button id="btn-redo" class="chip" type="button" disabled title="Redo (⇧⌘Z)">↷ Redo</button>
+            </div>
+            <div class="fields-toolbar-search">
+              <input id="fields-search" type="search" placeholder="Filter fields by label…" aria-label="Filter fields by label or type" title="Type to hide rows whose label or type doesn't match. Esc clears.">
+              <span id="fields-search-count" class="muted small"></span>
+            </div>
+            <button id="btn-lock-reorder" class="chip lock-chip locked" type="button" aria-pressed="true" title="Drag-to-reorder is locked so you can't move a field by accident. Click to unlock.">🔒 Reorder locked</button>
+          </div>
           <div id="fields-list" class="fields-list" aria-live="polite"></div>
 
           <div class="add-field">
             <span class="muted">Add:</span>
-            <button class="chip chip-section" data-add="section">＋ Section header</button>
-            <button class="chip" data-add="text">Short text</button>
-            <button class="chip" data-add="textarea">Long text</button>
-            <button class="chip" data-add="number">Number</button>
-            <button class="chip" data-add="date">Date</button>
-            <button class="chip" data-add="radio">Single choice</button>
-            <button class="chip" data-add="checkbox">Multi choice</button>
-            <button class="chip" data-add="yesno">Yes / No</button>
+            <button class="chip chip-section" data-add="section"   title="Add a section band — groups the questions below it">＋ Section header</button>
+            <button class="chip chip-section" data-add="pagebreak" title="Split the form into multiple pages — the patient sees Prev/Next buttons">＋ Page break</button>
+            <button class="chip"              data-add="text"     title="Add a single-line text field (name, address, phone…)">Short text</button>
+            <button class="chip"              data-add="textarea" title="Add a multi-line text field for longer answers">Long text</button>
+            <button class="chip"              data-add="number"   title="Add a numeric input">Number</button>
+            <button class="chip"              data-add="date"     title="Add a date picker">Date</button>
+            <button class="chip"              data-add="radio"    title="Add a single-choice question (one option from a list)">Single choice</button>
+            <button class="chip"              data-add="checkbox" title="Add a multi-choice question (tick all that apply)">Multi choice</button>
+            <button class="chip"              data-add="yesno"    title="Add a Yes / No question">Yes / No</button>
+            <button class="chip"              data-add="file"      title="Let the patient attach a file or take a photo (ID scan, photo, etc.)">File / photo</button>
+            <button class="chip"              data-add="signature" title="Capture a handwritten signature on a drawing pad (mouse, finger, or stylus)">Signature</button>
+            <button class="chip"              data-add="file"     title="Add a file / photo upload — patient picks or snaps with camera; max 5 MB">File / photo</button>
           </div>
 
           <div class="actions">
-            <button id="btn-generate" class="primary">Generate link <span class="arrow">→</span></button>
-            <button id="btn-clear-draft" class="secondary" type="button">Clear draft</button>
+            <button id="btn-generate"    class="primary"               title="Encrypt the form and create a shareable invite link + one-time passphrase">Generate link <span class="arrow">→</span></button>
+            <button id="btn-clear-draft" class="secondary" type="button" title="Wipe the title, description, and all questions from this form (the form record itself stays)">Clear draft</button>
           </div>
         </div>
 
@@ -84,6 +142,8 @@
             <h2>Preview</h2>
             <div class="preview-head-actions">
               <span class="muted preview-tag">What your patient will see</span>
+              <button id="btn-test-fill" class="secondary" type="button" title="Try filling the form yourself — answers are local, never transmitted">Test fill</button>
+              <button id="btn-test-reset" class="secondary hidden" type="button" title="Clear your test answers">Reset</button>
               <button id="btn-print-preview" class="secondary" type="button" title="Print or save as PDF">Print / PDF</button>
             </div>
           </div>

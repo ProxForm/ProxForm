@@ -1,7 +1,7 @@
 // © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE.
 // ProxForm service worker — network-first for HTML/CSS/JS, cache-first for assets.
 
-const CACHE = 'proxform-v7';
+const CACHE = 'proxform-v8';
 
 const ASSETS = [
   '/',
@@ -13,19 +13,22 @@ const ASSETS = [
   '/gdpr.html',
   '/import.html',
   '/404.html',
-  '/css/style.css?v=7',
-  '/js/crypto.js?v=7',
-  '/js/p2p.js?v=7',
-  '/js/builder.js?v=7',
-  '/js/fill.js?v=7',
-  '/js/theme.js?v=7',
-  '/js/storage.js?v=7',
-  '/js/netcheck.js?v=7',
-  '/js/render.js?v=7',
-  '/js/import.js?v=7',
-  '/js/footer.js?v=7',
-  '/js/analytics.js?v=7',
-  '/js/bg.js?v=7',
+  '/css/style.css?v=8',
+  '/js/crypto.js?v=8',
+  '/js/p2p.js?v=8',
+  '/js/builder.js?v=8',
+  '/js/fill.js?v=8',
+  '/js/theme.js?v=8',
+  '/js/storage.js?v=8',
+  '/js/netcheck.js?v=8',
+  '/js/render.js?v=8',
+  '/js/cond.js?v=8',
+  '/js/sig.js?v=8',
+  '/js/import.js?v=8',
+  '/js/templates.js?v=8',
+  '/js/footer.js?v=8',
+  '/js/analytics.js?v=8',
+  '/js/bg.js?v=8',
   '/manifest.json',
   '/icons/favicon.svg'
 ];

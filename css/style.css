@@ -60,6 +60,35 @@ body {
 body > main { flex: 1 0 auto; }
 body > .footer { flex-shrink: 0; margin-top: auto; }
 
+/* Custom scrollbar — pop-art red thumb on a cream track with a black ink
+   border. Firefox uses the two CSS properties; Chromium/Safari uses the
+   ::-webkit pseudo-elements. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) var(--surface-2);
+}
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track {
+  background: var(--surface-2);
+  border-left: 1.5px solid #0f0f0f;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border: 2px solid #0f0f0f;
+  border-radius: 999px;
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.18) 1.1px, transparent 1.4px);
+  background-size: 6px 6px;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--primary-hover); }
+::-webkit-scrollbar-thumb:active { background-color: var(--primary-dark); }
+::-webkit-scrollbar-corner { background: var(--surface-2); }
+html[data-theme="dark"] ::-webkit-scrollbar-track {
+  border-left-color: var(--accent);
+}
+html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  border-color: var(--accent);
+}
+
 a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
@@ -275,7 +304,13 @@ body.app-page .app-main {
   margin: 0 auto;
   padding: 1.5rem 1.25rem 4rem;
 }
-body.builder-page .app-main { max-width: 1280px; }
+body.app-page.builder-page .app-main {
+  max-width: none !important;
+  width: 96vw;
+  width: min(96vw, 2400px);
+  margin-left: auto;
+  margin-right: auto;
+}
 
 /* Builder side-by-side: editor on the left, live preview on the right.
    Stacks below 980px so the preview moves under the editor on narrow screens. */
@@ -406,6 +441,241 @@ html { scroll-behavior: smooth; }
 }
 .back-link:hover { color: var(--primary); text-decoration: none; }
 
+/* Heading row that pairs the page H1 with the save-state pill. */
+.step-head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+.step-head h1 { margin-bottom: 0.25em; }
+
+.save-indicator {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.75rem;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1.5px solid #0f0f0f;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  white-space: nowrap;
+  user-select: none;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.save-indicator.save-clean   { background: var(--accent); color: #0f0f0f; }
+.save-indicator.save-pending { background: var(--surface-2); color: var(--muted); }
+.save-indicator.save-error   { background: rgba(227, 6, 19, 0.15); color: var(--danger); border-color: var(--danger); }
+
+/* Texting-style three-dot bounce while a save is dirty/in-flight. */
+.save-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.save-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.4;
+  animation: pf-save-bounce 1.1s ease-in-out infinite;
+}
+.save-dots span:nth-child(2) { animation-delay: 0.15s; }
+.save-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes pf-save-bounce {
+  0%, 60%, 100% { transform: translateY(0);    opacity: 0.35; }
+  30%           { transform: translateY(-3px); opacity: 1; }
+}
+
+/* Metallic shield-shine sweep on the "Saved" state — runs once every few
+   seconds across the pill to signal the draft is locked in. */
+.save-indicator.save-clean::before {
+  content: "";
+  position: absolute;
+  top: -2px; bottom: -2px;
+  left: -45%;
+  width: 35%;
+  background: linear-gradient(105deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0) 100%);
+  transform: skewX(-20deg);
+  animation: pf-save-shine 3.8s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes pf-save-shine {
+  0%   { left: -45%; opacity: 0; }
+  8%   { opacity: 1; }
+  42%  { left: 115%; opacity: 1; }
+  43%  { opacity: 0; }
+  100% { left: 115%; opacity: 0; }
+}
+
+html[data-theme="dark"] .save-indicator { border-color: var(--accent); }
+html[data-theme="dark"] .save-indicator.save-clean { color: #0f0f0f; }
+html[data-theme="dark"] .save-indicator.save-clean::before {
+  background: linear-gradient(105deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.7) 50%,
+    rgba(255, 255, 255, 0) 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .save-dots span { animation: none; opacity: 1; }
+  .save-indicator.save-clean::before { animation: none; opacity: 0; }
+}
+
+/* ── Builder jumbotron ──────────────────────────────────────────────────
+   Pop-art explainer at the top of the editor. Collapses to a single bar. */
+.builder-jumbo {
+  position: relative;
+  margin: 0.75rem 0 1.5rem;
+  background:
+    radial-gradient(circle, rgba(15, 15, 15, 0.06) 1px, transparent 1.4px) 0 0 / 10px 10px,
+    var(--surface);
+  border: 2.5px solid #0f0f0f;
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 #0f0f0f;
+  overflow: hidden;
+}
+html[data-theme="dark"] .builder-jumbo {
+  border-color: var(--accent);
+  box-shadow: 4px 4px 0 var(--accent);
+}
+.builder-jumbo::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 10px;
+  background:
+    repeating-linear-gradient(90deg,
+      var(--primary) 0 16px,
+      #0f0f0f 16px 19px,
+      var(--accent) 19px 35px,
+      #0f0f0f 35px 38px);
+  border-bottom: 2px solid #0f0f0f;
+}
+html[data-theme="dark"] .builder-jumbo::before { border-bottom-color: var(--accent); }
+
+.builder-jumbo-head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1.05rem 1rem 0.85rem;
+  cursor: pointer;
+  user-select: none;
+}
+.builder-jumbo.collapsed .builder-jumbo-head { padding-bottom: 1rem; }
+.builder-jumbo-tag {
+  display: inline-block;
+  background: var(--accent);
+  color: #0f0f0f;
+  border: 1.5px solid #0f0f0f;
+  border-radius: 999px;
+  padding: 0.18rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.builder-jumbo-headline {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+}
+.builder-jumbo-head .icon-btn {
+  border-width: 1.5px;
+  font-size: 1rem;
+  flex-shrink: 0;
+  transition: transform 140ms ease;
+}
+.builder-jumbo.collapsed .builder-jumbo-head .icon-btn { transform: rotate(-90deg); }
+
+.builder-jumbo-body {
+  padding: 0 1.1rem 1.2rem;
+}
+.builder-jumbo.collapsed .builder-jumbo-body { display: none; }
+
+.builder-jumbo-lede {
+  margin: 0 0 1rem;
+  font-size: 0.98rem;
+  color: var(--text);
+  max-width: 70ch;
+}
+.builder-jumbo-lede em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--primary-ink);
+  background: var(--primary);
+  border: 1.5px solid #0f0f0f;
+  padding: 0 0.3em;
+  border-radius: 4px;
+}
+
+.builder-jumbo-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+.builder-jumbo-steps li {
+  position: relative;
+  background: var(--surface);
+  border: 1.5px solid #0f0f0f;
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0.85rem 0.9rem 0.75rem;
+  box-shadow: 2px 2px 0 #0f0f0f;
+}
+html[data-theme="dark"] .builder-jumbo-steps li {
+  border-color: var(--accent);
+  box-shadow: 2px 2px 0 var(--accent);
+}
+.builder-jumbo-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  background: var(--primary);
+  color: var(--primary-ink);
+  border: 1.5px solid #0f0f0f;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 0.92rem;
+  margin-bottom: 0.5rem;
+  box-shadow: 2px 2px 0 var(--accent);
+}
+html[data-theme="dark"] .builder-jumbo-num { border-color: var(--accent); }
+.builder-jumbo-steps h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text);
+}
+.builder-jumbo-steps p {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
 /* ── Import dialog ──────────────────────────────────────────────────── */
 
 .dialog {
@@ -425,6 +695,66 @@ html { scroll-behavior: smooth; }
 .dialog .file-row input[type="file"] { padding: 0.4rem 0; border: none; background: transparent; }
 .dialog textarea { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.88rem; }
 .dialog .actions { margin-top: 1rem; }
+
+/* Starter templates picker — pop-art cards with industry tag chip. */
+.templates-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  margin-top: 0.5rem;
+}
+.template-card {
+  background: var(--surface);
+  border: 2px solid #0f0f0f;
+  border-radius: var(--radius);
+  padding: 0.85rem 0.95rem 1rem;
+  box-shadow: 3px 3px 0 #0f0f0f;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+html[data-theme="dark"] .template-card {
+  border-color: var(--accent);
+  box-shadow: 3px 3px 0 var(--accent);
+}
+.template-tag {
+  display: inline-block;
+  align-self: flex-start;
+  background: var(--accent);
+  color: #0f0f0f;
+  border: 1.5px solid #0f0f0f;
+  border-radius: 999px;
+  padding: 0.12rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.template-name {
+  margin: 0.1rem 0 0;
+  font-size: 1.02rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+.template-summary {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.4;
+  flex: 1;
+}
+.template-meta {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.template-card .primary {
+  align-self: stretch;
+  margin-top: 0.4rem;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
 
 .import-help {
   margin: 0.5rem 0 0.75rem;
@@ -454,10 +784,77 @@ html { scroll-behavior: smooth; }
 }
 
 /* Import-docs page (/import.html) — code blocks, type cards, inline code. */
-body.import-page main { max-width: 880px; }
+body.app-page.import-page .app-main {
+  max-width: none !important;
+  width: 96vw;
+  width: min(96vw, 2400px);
+  margin-left: auto;
+  margin-right: auto;
+}
 body.import-page h2 { margin-top: 2.2rem; }
 body.import-page h3 { margin-top: 1.6rem; }
 body.import-page h4 { margin: 0 0 0.4em; font-size: 0.95rem; }
+
+/* The paste-and-import area at the top of /import.html. Pop-art panel so it
+   reads as the primary action; docs scroll below it in two columns. */
+.import-area-top {
+  background: var(--surface);
+  border: 2.5px solid #0f0f0f;
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 #0f0f0f;
+  padding: 1rem 1.1rem 1.1rem;
+  margin: 0.5rem 0 2rem;
+}
+html[data-theme="dark"] .import-area-top {
+  border-color: var(--accent);
+  box-shadow: 4px 4px 0 var(--accent);
+}
+.import-area-top label { display: block; margin-bottom: 0.6rem; }
+.import-area-top textarea {
+  width: 100%;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.88rem;
+  padding: 0.55rem 0.7rem;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-2);
+  resize: vertical;
+  box-sizing: border-box;
+}
+.import-area-top .file-row { display: flex; flex-direction: column; gap: 0.35rem; }
+.import-area-top .file-row input[type="file"] {
+  padding: 0.4rem 0; border: none; background: transparent;
+}
+.import-area-top .actions { margin-top: 0.75rem; display: flex; gap: 0.6rem; }
+
+/* Two-column docs. Every card lives in the same CSS multi-column flow so
+   they pack tight top-to-bottom in each column with no empty rows. */
+.docs-cols {
+  columns: 1;
+  column-gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+@media (min-width: 980px) { .docs-cols { columns: 2; } }
+
+.docs-card {
+  display: block;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem 1.1rem;
+  box-shadow: 2px 2px 0 var(--border);
+  margin: 0 0 1.25rem;
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+}
+html[data-theme="dark"] .docs-card { box-shadow: 2px 2px 0 var(--accent); }
+.docs-card > :first-child { margin-top: 0; }
+.docs-card > :last-child  { margin-bottom: 0; }
+.docs-card h2 { margin-top: 0; font-size: 1.25rem; }
+.docs-card h3 { margin-top: 0; font-size: 1.05rem; }
+.docs-card pre.import-doc { margin: 0.5rem 0 0.6rem; }
+.docs-card ul.why-list { margin-bottom: 0.4rem; }
 body.import-page p code,
 body.import-page li code {
   background: var(--surface-2);
@@ -488,8 +885,8 @@ pre.import-doc code {
 }
 .import-types {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   margin-top: 0.75rem;
 }
 .import-type {
@@ -510,7 +907,6 @@ html[data-theme="dark"] pre.import-doc { box-shadow: 3px 3px 0 var(--accent); }
 
 .builder-layout { display: grid; gap: 1.5rem; align-items: start; }
 @media (min-width: 980px) {
-  body.app-page.builder-page .app-main { max-width: 1240px; }
   .builder-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2rem; }
   .builder-preview {
     position: sticky;
@@ -539,11 +935,83 @@ html[data-theme="dark"] pre.import-doc { box-shadow: 3px 3px 0 var(--accent); }
 }
 
 .preview-frame, .preview-card {
+  position: relative;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
   padding: 1rem;
   box-shadow: var(--shadow);
+}
+
+/* Test-fill mode — inputs become interactive so the clinician can rehearse.
+   A yellow banner across the top makes it impossible to confuse with the
+   real form, and the frame gets an attention border. */
+.preview-frame.test-mode {
+  border-color: var(--accent);
+  box-shadow: 4px 4px 0 var(--accent);
+  padding-top: 2.6rem;
+}
+.preview-frame.test-mode::before {
+  content: "🧪 TEST MODE — answers stay on this device, never transmitted";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  background: var(--accent);
+  color: #0f0f0f;
+  border-bottom: 2px solid #0f0f0f;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.35rem 0.85rem;
+  text-align: center;
+}
+.preview-frame.test-mode .intake-cell input:not([type="radio"]):not([type="checkbox"]),
+.preview-frame.test-mode .intake-cell textarea {
+  width: 100%;
+  display: block;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 0.55rem;
+  font: inherit;
+}
+.preview-frame.test-mode .intake-cell input[type="radio"],
+.preview-frame.test-mode .intake-cell input[type="checkbox"] {
+  width: auto;
+  display: inline-block;
+  margin-right: 0.35rem;
+}
+.preview-frame.test-mode .intake-cell textarea { min-height: 5em; resize: vertical; }
+.preview-frame.test-mode .intake-cell input:focus,
+.preview-frame.test-mode .intake-cell textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(227, 6, 19, 0.20);
+}
+
+/* Live validation feedback. `:user-invalid` triggers only after the user has
+   interacted (typed, blurred, or attempted submit), so untouched required
+   fields don't pop red on first load. Applies to both the test-fill preview
+   and the patient's live form on fill.html. */
+.preview-frame.test-mode .intake-cell input:user-invalid,
+.preview-frame.test-mode .intake-cell textarea:user-invalid,
+.patient-form:not(.preview-form) .intake-cell input:user-invalid,
+.patient-form:not(.preview-form) .intake-cell textarea:user-invalid {
+  border-color: var(--danger) !important;
+  background: rgba(227, 6, 19, 0.06) !important;
+  box-shadow: 0 0 0 2px rgba(227, 6, 19, 0.12) !important;
+}
+.preview-frame.test-mode .intake-cell input:user-invalid:focus,
+.preview-frame.test-mode .intake-cell textarea:user-invalid:focus,
+.patient-form:not(.preview-form) .intake-cell input:user-invalid:focus,
+.patient-form:not(.preview-form) .intake-cell textarea:user-invalid:focus {
+  box-shadow: 0 0 0 3px rgba(227, 6, 19, 0.25) !important;
+}
+.secondary.active {
+  background: var(--accent);
+  border-color: #0f0f0f;
+  font-weight: 700;
 }
 .preview-title  { margin: 0 0 0.25rem; font-size: 1.1rem; }
 .preview-desc   { margin: 0 0 0.85rem; }
@@ -557,8 +1025,11 @@ html[data-theme="dark"] pre.import-doc { box-shadow: 3px 3px 0 var(--accent); }
   text-align: center;
   color: var(--muted);
 }
-.preview-form .intake-cell input,
+.preview-form .intake-cell input:not([type="radio"]):not([type="checkbox"]),
 .preview-form .intake-cell textarea {
+  width: 100%;
+  display: block;
+  box-sizing: border-box;
   background: transparent;
   border: none;
   border-bottom: 1px dotted var(--border);
@@ -664,6 +1135,138 @@ html[data-theme="dark"] pre.import-doc { box-shadow: 3px 3px 0 var(--accent); }
 .field-edit.collapsed .field-edit-head { margin-bottom: -0.4rem; }
 .field-edit.collapsed .field-edit-body { display: none; }
 
+/* Toolbar above the field list — holds the reorder-lock toggle (and future
+   field-list-scope buttons). Sticky right-align so it sits at the edge. */
+.fields-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.2rem 0 0.5rem;
+}
+.fields-toolbar-left { display: flex; gap: 0.4rem; }
+.fields-toolbar .chip:disabled { opacity: 0.4; cursor: default; }
+.fields-toolbar .chip:disabled:hover { border-color: var(--border); color: var(--text); }
+
+.fields-toolbar-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.fields-toolbar-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem 0.7rem;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.85rem;
+}
+.fields-toolbar-search input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(227, 6, 19, 0.18);
+}
+.fields-toolbar-search .small { font-size: 0.72rem; white-space: nowrap; }
+
+.field-edit.filtered-out { display: none !important; }
+
+/* Conditional-logic editor block — show/hide a field based on another's answer. */
+.field-conditional {
+  margin: 0.4rem 0 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.field-conditional-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.85rem;
+  align-items: flex-end;
+  margin-top: 0.5rem;
+}
+.field-conditional-row .sub.inline > select,
+.field-conditional-row .sub.inline > input { min-width: 8rem; }
+.field-conditional-row .sub.inline.grow > input,
+.field-conditional-row .sub.inline.grow > select { flex: 1; }
+
+/* Hide a cell whose conditional rule isn't met. Also kills its row's flex
+   contribution so the layout collapses cleanly. */
+.intake-cell.hidden-cond,
+.paper-cell.hidden-cond { display: none !important; }
+/* If an entire row's contents are hidden, hide the row too. */
+.intake-row:has(> .intake-cell:not(.hidden-cond)) { display: flex; }
+.intake-row:not(:has(> .intake-cell:not(.hidden-cond))) { display: none !important; }
+.lock-chip {
+  cursor: pointer;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.78rem;
+  user-select: none;
+}
+.lock-chip.locked {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+.lock-chip.unlocked {
+  background: var(--accent);
+  color: #0f0f0f;
+  border-color: #0f0f0f;
+  box-shadow: 2px 2px 0 #0f0f0f;
+}
+.lock-chip:hover { border-color: var(--primary); color: var(--primary); }
+.lock-chip.unlocked:hover { color: #0f0f0f; border-color: #0f0f0f; }
+
+/* Drag handle to grab a row and reorder it via drag-and-drop. The button
+   itself is the only draggable element; the row body is the drop target. */
+.field-drag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.15em;
+  line-height: 1;
+  color: var(--muted);
+  background: transparent;
+  border: 1.5px dashed var(--border);
+  border-radius: 6px;
+  cursor: grab;
+  flex-shrink: 0;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.field-drag:hover {
+  color: var(--text);
+  border-style: solid;
+  background: var(--surface-2);
+}
+.field-drag:active { cursor: grabbing; }
+
+/* When reorder is locked, the handles are visible but visibly inactive so
+   users can see the affordance exists without being able to act on it. */
+body.reorder-locked .field-drag {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+body.reorder-locked .field-drag:hover {
+  background: transparent;
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.field-edit.dragging { opacity: 0.4; }
+.field-edit.drop-above { box-shadow: 0 -3px 0 0 var(--accent) inset, 0 -3px 0 0 var(--accent); }
+.field-edit.drop-above { border-top: 3px solid var(--accent) !important; }
+.field-edit.drop-below { border-bottom: 3px solid var(--accent) !important; }
+
 .field-toggle {
   display: inline-flex;
   align-items: center;
@@ -746,6 +1349,32 @@ html[data-theme="dark"] pre.import-doc { box-shadow: 3px 3px 0 var(--accent); }
   display: inline;
   margin: 0;
 }
+.sub.inline > input[type="number"] { width: 6rem; }
+.sub.inline.grow { flex: 1 1 100%; }
+.sub.inline.grow > input { flex: 1; }
+
+.field-validation {
+  margin: 0.4rem 0 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.field-validation .sub-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4rem;
+  color: var(--muted);
+}
+.field-validation-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  align-items: center;
+}
 
 .add-field {
   display: flex;
@@ -819,9 +1448,18 @@ html[data-theme="dark"] pre.import-doc { box-shadow: 3px 3px 0 var(--accent); }
   padding: 0.6rem 0.85rem;
   min-width: 0;
 }
-.intake-cell.full { flex: 1 1 100%; }
-.intake-cell.half { flex: 1 1 50%; }
-.intake-cell.half + .intake-cell.half { border-left: 1px solid var(--border); }
+.intake-cell.full    { flex: 1 1 100%;    }
+.intake-cell.half    { flex: 1 1 50%;     }
+.intake-cell.third   { flex: 1 1 33.333%; min-width: 0; }
+.intake-cell.quarter { flex: 1 1 25%;     min-width: 0; }
+/* A lone partial-width cell (no siblings to share the row) expands to fill
+   it so the input doesn't sit in a tiny box with empty space next to it. */
+.intake-cell.half:only-child,
+.intake-cell.third:only-child,
+.intake-cell.quarter:only-child { flex: 1 1 100%; }
+.intake-cell.half    + .intake-cell.half,
+.intake-cell.third   + .intake-cell.third,
+.intake-cell.quarter + .intake-cell.quarter { border-left: 1px solid var(--border); }
 
 .intake-label {
   font-size: 0.85rem;
@@ -829,6 +1467,121 @@ html[data-theme="dark"] pre.import-doc { box-shadow: 3px 3px 0 var(--accent); }
   color: var(--text);
   margin-bottom: 0.3rem;
 }
+.intake-num {
+  display: inline-block;
+  min-width: 1.5em;
+  color: var(--primary);
+  font-weight: 800;
+}
+
+/* Pagebreak divider — shown in non-paginated contexts (clinician's live
+   answers, builder preview). The patient view splits on these instead. */
+.intake-pagebreak {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--accent) 0 14px,
+    #0f0f0f 14px 17px,
+    var(--primary) 17px 31px,
+    #0f0f0f 31px 34px
+  );
+  color: #0f0f0f;
+  border-top: 2px solid #0f0f0f;
+  border-bottom: 2px solid #0f0f0f;
+  padding: 0.45rem 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.78rem;
+  text-shadow: 0 0 4px rgba(255, 248, 231, 0.85);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.intake-pagebreak-label {
+  margin-left: 0.5rem;
+  background: var(--surface);
+  border: 1.5px solid #0f0f0f;
+  border-radius: 4px;
+  padding: 0.05rem 0.4rem;
+  text-shadow: none;
+}
+
+.field-edit.is-pagebreak { background: var(--surface-2); border-style: dashed; }
+.field-edit.is-pagebreak .field-type { color: var(--primary); }
+
+/* File / photo upload field — patient view and answer rendering. */
+.intake-cell input[type="file"] {
+  display: block;
+  width: 100%;
+  font: inherit;
+  padding: 0.4rem 0;
+}
+.file-preview {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.file-preview img {
+  max-width: 220px;
+  max-height: 220px;
+  border: 1.5px solid #0f0f0f;
+  border-radius: 4px;
+  box-shadow: 2px 2px 0 #0f0f0f;
+  display: block;
+}
+.file-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+.file-thumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border: 1.5px solid #0f0f0f;
+  border-radius: 4px;
+  box-shadow: 2px 2px 0 #0f0f0f;
+}
+.file-meta { color: var(--muted); font-size: 0.85rem; }
+html[data-theme="dark"] .file-preview img,
+html[data-theme="dark"] .file-thumb { border-color: var(--accent); box-shadow: 2px 2px 0 var(--accent); }
+
+/* Signature pad — bordered canvas with a baseline guide. touch-action:none
+   so a finger drag draws on the canvas instead of scrolling the page. */
+.signature-pad { display: block; width: 100%; }
+.signature-pad canvas {
+  display: block;
+  width: 100%;
+  height: 140px;
+  background:
+    linear-gradient(to bottom, transparent calc(100% - 28px), rgba(0, 0, 0, 0.12) calc(100% - 28px), rgba(0, 0, 0, 0.12) calc(100% - 27px), transparent calc(100% - 27px)),
+    var(--surface);
+  border: 2px solid #0f0f0f;
+  border-radius: 6px;
+  cursor: crosshair;
+  touch-action: none;
+}
+.signature-pad[data-disabled="1"] canvas { cursor: not-allowed; }
+.signature-pad-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.3rem;
+  gap: 0.6rem;
+}
+.signature-hint { font-size: 0.78rem; }
+.signature-clear { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
+html[data-theme="dark"] .signature-pad canvas { border-color: var(--accent); }
+
+#print-container .paper-pagebreak {
+  break-before: page;
+  page-break-before: always;
+  height: 0;
+}
+
+/* Patient-view page navigation (Prev / Next / page counter). */
+.page-actions { display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap; }
+.page-nav { display: flex; align-items: center; gap: 0.6rem; }
 
 .intake-cell input[type="text"],
 .intake-cell input[type="number"],
@@ -860,7 +1613,9 @@ html[data-theme="dark"] pre.import-doc { box-shadow: 3px 3px 0 var(--accent); }
 
 @media (max-width: 560px) {
   .intake-row { flex-direction: column; }
-  .intake-cell.half + .intake-cell.half { border-left: none; border-top: 1px solid var(--border); }
+  .intake-cell.half    + .intake-cell.half,
+  .intake-cell.third   + .intake-cell.third,
+  .intake-cell.quarter + .intake-cell.quarter { border-left: none; border-top: 1px solid var(--border); }
 }
 
 /* ── Toast ──────────────────────────────────────────────────────────── */
@@ -1267,46 +2022,168 @@ html[data-theme="dark"] .footer-attribution { border-top-color: var(--accent); }
 
 @media print { .footer { display: none !important; } }
 
+/* ── Paper-print rendering ───────────────────────────────────────────
+   Static, no-real-inputs version of a form, generated at print time.
+   These styles intentionally live outside @media print so the container
+   renders identically on screen if you ever debug it. */
+#print-container {
+  width: 100%;
+  color: #000;
+  font: 12pt/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+#print-container .paper-title {
+  margin: 0 0 0.2rem;
+  font-size: 18pt;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+#print-container .paper-desc {
+  margin: 0 0 1rem;
+  font-size: 10.5pt;
+  color: #444;
+}
+#print-container .paper-form {
+  width: 100%;
+  border: 1px solid #555;
+  border-top: none;
+}
+#print-container .paper-section {
+  background: #eaeaea;
+  border-top: 1px solid #555;
+  padding: 0.45rem 0.7rem;
+  font-weight: 700;
+  font-size: 10.5pt;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+#print-container .paper-section-desc {
+  font-weight: 400;
+  font-size: 9.5pt;
+  color: #444;
+  margin-top: 0.15rem;
+}
+#print-container .paper-row {
+  display: flex;
+  border-top: 1px solid #555;
+}
+#print-container .paper-cell {
+  padding: 0.5rem 0.7rem 0.65rem;
+}
+#print-container .paper-cell.full    { flex: 1 1 100%;    }
+#print-container .paper-cell.half    { flex: 1 1 50%;     }
+#print-container .paper-cell.third   { flex: 1 1 33.333%; min-width: 0; }
+#print-container .paper-cell.quarter { flex: 1 1 25%;     min-width: 0; }
+#print-container .paper-cell.half:only-child,
+#print-container .paper-cell.third:only-child,
+#print-container .paper-cell.quarter:only-child { flex: 1 1 100%; }
+#print-container .paper-cell.half    + .paper-cell.half,
+#print-container .paper-cell.third   + .paper-cell.third,
+#print-container .paper-cell.quarter + .paper-cell.quarter { border-left: 1px solid #555; }
+#print-container .paper-label {
+  font-size: 10pt;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+#print-container .paper-label .req { color: #b03030; }
+#print-container .paper-hint {
+  font-size: 9pt;
+  color: #555;
+  margin: -0.3rem 0 0.5rem;
+}
+#print-container .paper-line {
+  border-bottom: 1px solid #777;
+  height: 1.6em;
+  margin-bottom: 0.35rem;
+}
+#print-container .paper-line.filled {
+  height: auto;
+  padding: 0.1rem 0;
+  font-weight: 500;
+}
+#print-container .paper-block.filled {
+  border: 1px solid #777;
+  padding: 0.4rem 0.55rem;
+  min-height: 4.2em;
+  white-space: pre-wrap;
+}
+#print-container .paper-date {
+  letter-spacing: 0.04em;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10pt;
+  color: #555;
+}
+#print-container .paper-date span {
+  display: inline-block;
+  border-bottom: 1px solid #777;
+  padding: 0 0.25em;
+  margin: 0 0.15em;
+}
+#print-container .paper-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.1rem;
+  margin-top: 0.1rem;
+}
+#print-container .paper-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 10.5pt;
+}
+#print-container .paper-box {
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  border: 1px solid #444;
+  border-radius: 2px;
+  flex-shrink: 0;
+  position: relative;
+}
+#print-container .paper-box.checked::after {
+  content: "✓";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95em;
+  font-weight: 800;
+  color: #000;
+}
+
 /* ── Print ─────────────────────────────────────────────────────────── */
 
 @media print {
-  @page { margin: 12mm; }
+  /* @page margin:0 + body padding lets us draw to the paper edges and is
+     the most reliable way to suppress the browser's auto-inserted header
+     (date / page title at top) and footer (URL / page number at bottom).
+     Some browsers still honor the user's "Headers and footers" dialog box;
+     this at least pulls them out of the printable area. */
+  @page { size: A4 portrait; margin: 0; }
 
-  body { background: #fff; color: #000; }
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+  body {
+    display: block !important;
+    min-height: 0 !important;
+    padding: 14mm !important;
+  }
+  body::before, body::after, .bg-mirror { display: none !important; }
   .topbar, .actions, .toast, .session-code, .net-status, .conn-status { display: none !important; }
   .patient-form, .answers-live { border-color: #555; box-shadow: none; }
   .intake-row, .intake-section { border-color: #555; }
   .intake-cell.half + .intake-cell.half { border-left-color: #555; }
   .intake-section { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #eaeaea !important; }
 
-  /* Print only the preview when triggered from the builder. */
-  body.printing-preview .step,
-  body.printing-preview .builder-edit,
-  body.printing-preview .preview-head,
-  body.printing-preview .add-field { display: none !important; }
-  body.printing-preview #step-build,
-  body.printing-preview .builder-layout,
-  body.printing-preview .builder-preview { display: block !important; }
-  body.printing-preview .app-main { max-width: none !important; padding: 0 !important; }
-  body.printing-preview .builder-preview {
-    position: static !important;
-    border: none !important;
-    padding: 0 !important;
-    max-height: none !important;
-    overflow: visible !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-  body.printing-preview .preview-frame { padding: 0 !important; }
-  body.printing-preview .preview-title { font-size: 1.4rem; margin-bottom: 0.2rem; }
-  body.printing-preview .preview-form { border-top: 1px solid #555; }
-
-  /* Inputs render as plain underlines on paper. */
-  .preview-form .intake-cell input,
-  .preview-form .intake-cell textarea {
-    border-bottom: 1px solid #999;
-    color: #000;
-    background: transparent !important;
-  }
-  .preview-form .intake-cell textarea { min-height: 2.5em; }
+  /* JS builds a #print-container at body level with a static paper-style
+     form (no real inputs). Hide everything else and show only that. The
+     paper-* element styles live outside @media print at the top of this
+     section so the same rules apply on screen for debugging. */
+  body.printing-preview > * { display: none !important; }
+  body.printing-preview > #print-container { display: block !important; }
 }

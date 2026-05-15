@@ -1,36 +1,54 @@
 # ProxForm — Builder TODO
 
-Open items for the form-builder side, ordered roughly by bang-for-buck.
+All initial items completed. Kept as a record of what shipped.
 
-## Quick wins (each ~30 min)
+## Quick wins
 
-1. **Duplicate field** — clone the current row with all its settings (label, type, required, half-width, options). Up/down/remove are there; clone is the missing twin.
-2. **Placeholder / help text** — one-line hint shown under each field on the patient view. Schema gets a new `hint` key; `render.js` shows it; import format gets an indented `> hint text` line.
-3. **Section description** — sections currently only carry a title. Add an optional subtitle line for "instructions for this group."
-4. **Saving… / Saved indicator** — auto-save is silent right now; a tiny pill near the title gives users confidence the draft is persisted.
-5. **Default value per field** — prefill a field's initial answer. Useful for known-good defaults (e.g. country = "Belgium").
-6. **Test-fill mode** — toggle the preview from disabled to interactive so the clinician can rehearse the form before sharing. Submit just clears, doesn't transmit.
+1. ✅ **Duplicate field** — clone button on each row, scrolls + focuses the clone.
+2. ✅ **Help text per field** — optional one-liner under each question; `> text` in YAML.
+3. ✅ **Section description** — optional subtitle on section bands; same `> text` syntax.
+4. ✅ **Saving… / Saved indicator** — pill near the title with bouncing-dots while saving and a shield-shine sweep when saved.
+5. ✅ **Default value per field** — pre-fills the patient view; `= value` in YAML, repeat lines for checkbox.
+6. ✅ **Test-fill mode** — toggle the preview to interactive so the clinician can rehearse without transmitting.
 
-## Mid-effort, high impact
+## Mid-effort
 
-7. **Form templates / starter library** — the four vertical templates in `import.html` already exist as text. Wire a "Start from a template" button on `forms.html`. Big onboarding lift.
-8. **Drag-and-drop reorder** — replaces the up/down arrows. More natural UX, but adds DnD wiring (HTML5 drag API or pointer events).
-9. **Field validation rules** — min/max for numbers, min/max length for text, regex pattern for text. Schema bloat is real but most form builders have it.
-10. **Undo / redo for the editor** — particularly for accidental delete. One stack of recent operations.
-11. **Form search / filter** — in a long form, find a field by label. Filter the editor list as the user types.
-12. **Question numbering toggle** — auto-number visible questions in the patient view (`1. Full name`, `2. DOB`, …). Skip sections in the count.
-13. **Field-width: third / quarter columns** — currently only full / half. A quarter-width option lets four short fields share a row.
+7. ✅ **Form templates** — 5 industry starters (medical, legal, hospitality, HR, wellness) via the *From template…* picker on the forms list.
+8. ✅ **Drag-and-drop reorder** — handle on each row, locked by default to prevent accidents, Esc cancels a drag.
+9. ✅ **Field validation rules** — `min`/`max` (number), `minlen`/`maxlen` (text/textarea), `pattern` (text). Live `:user-invalid` styling.
+10. ✅ **Undo / redo** — structural ops only; `⌘Z` / `⇧⌘Z` keyboard shortcuts + toolbar buttons.
+11. ✅ **Form search / filter** — live filter the editor by label/type, count pill, Esc clears.
+12. ✅ **Question numbering toggle** — form-level flag; auto-numbers visible questions, skips sections.
+13. ✅ **Third / Quarter columns** — generalised the half/full pairing; same-width fields pack into rows.
 
 ## Big features
 
-14. **Conditional logic (show-if / skip-if)** — "show field B only if field A = yes." Significant schema + render work, but it's the #1 missing capability vs. Typeform/Jotform.
-15. **Multi-page forms** — already noted in `CLAUDE.md` as "not done yet." Adds a page-break field type and pagination in the patient view.
-16. **File / photo upload field** — unlocks legal + hospitality verticals (ID scans, insurance cards). Chunk bytes over the existing WebRTC data channel; no backend, GDPR posture preserved. Needs: chunking + reassembly + progress UI + size cap.
-17. **Signature field** — canvas-based, captures into a base64 PNG, transmitted with the answer payload.
-18. **Native PDF export** — currently relies on the browser's "Save as PDF" print dialog. Add `jsPDF` (or similar) for a proper PDF of the completed form.
+14. ✅ **Conditional logic** — `showIf` rule per field (equals/notEquals/contains/notContains/empty/notEmpty). Live re-evaluation in patient view + test-fill. Hidden required fields skipped on submit. JSON round-trip; YAML deferred.
+15. ✅ **Multi-page forms** — `pagebreak` field type; patient view shows Prev/Next with per-page required validation; clinician sees the whole submission flat.
+16. ✅ **File / photo upload** — `file` field type with `accept` (image/PDF/any). 5 MB cap. Chunked transfer over the existing WebRTC data channel — no backend, GDPR posture preserved.
+17. ✅ **Signature field** — canvas pad (mouse / finger / stylus) → base64 PNG; rides the file chunk transport. Shared `ProxSig` widget used by both the patient view and the builder's test-fill.
+18. ✅ **Native PDF export** — covered by the existing tuned print path (paper-style rendering, A4 portrait, `@page margin: 0` suppresses Chromium header/footer chrome). No library bundled.
 
-## Recommended next batch
+## Side fixes that shipped along the way
 
-The smallest useful PR: **#1 (duplicate), #2 (hint), #4 (saving indicator)** — all three are pure schema/UI additions with no new architecture.
+- Pop-art theme (red / yellow / black ink / cream).
+- Pop-art jumbotron explainer at the top of the builder.
+- Halftone-scrollbar matching the theme.
+- Custom `/404.html` with pop-art badge and "where you were probably trying to go" cards.
+- `/gdpr.html` consolidating every GDPR-proof claim.
+- `/forms.html`, `/received.html`, `/import.html` as standalone pages with unified navigation.
+- Parallax background with a mirror overlay on the home page.
+- Sticky footer (always at the bottom on short pages).
+- Print output rewritten to render a paper-style form — no real `<input>` elements, just labels + underlines + checkbox marks. Consistent across browsers.
+- Tooltips across the topbar controls + add-field chips + lock/undo/redo/test-fill buttons.
+- Custom scrollbar.
 
-The biggest forward step: **#16 (file/photo upload)** — real piece of work and deserves its own session, but it's the gateway to the legal and hospitality verticals.
+## What's still NOT done (intentionally, for now)
+
+- YAML round-trip for `showIf` (use JSON for now or set it in the builder).
+- Multiple files per `file` field (single file in v1).
+- File upload progress bar (small files OK without one).
+- One-click PDF download (option 3 chosen — Print → Save as PDF is the path).
+- Form analytics / submission count per form.
+- Email integration / cloud sync (deliberately not built — would break the GDPR-proof architecture).
+- Pricing page / paywall.

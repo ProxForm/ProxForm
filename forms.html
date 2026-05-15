@@ -9,15 +9,16 @@
   <meta name="robots" content="noindex">
   <link rel="icon" href="/icons/favicon.svg">
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/css/style.css?v=7">
-  <script src="/js/theme.js?v=7" defer></script>
-  <script src="/js/netcheck.js?v=7" defer></script>
-  <script src="/js/storage.js?v=7" defer></script>
-  <script src="/js/render.js?v=7" defer></script>
-  <script src="/js/import.js?v=7" defer></script>
-  <script src="/js/builder.js?v=7" defer></script>
-  <script src="/js/footer.js?v=7" defer></script>
-  <script src="/js/analytics.js?v=7" defer></script>
+  <link rel="stylesheet" href="/css/style.css?v=8">
+  <script src="/js/theme.js?v=8" defer></script>
+  <script src="/js/netcheck.js?v=8" defer></script>
+  <script src="/js/storage.js?v=8" defer></script>
+  <script src="/js/render.js?v=8" defer></script>
+  <script src="/js/import.js?v=8" defer></script>
+  <script src="/js/templates.js?v=8" defer></script>
+  <script src="/js/builder.js?v=8" defer></script>
+  <script src="/js/footer.js?v=8" defer></script>
+  <script src="/js/analytics.js?v=8" defer></script>
 </head>
 <body class="app-page forms-page" data-page="forms">
   <header class="topbar">
@@ -29,10 +30,10 @@
       <a href="/received.html">Received</a>
     </nav>
     <div class="topbar-actions">
-      <span id="net-status" class="net-status net-checking" title="Checking outbound connectivity to STUN…">Checking…</span>
-      <span id="conn-status" class="conn-status">Not connected</span>
-      <a class="text-btn" href="/builder.html">Build a form</a>
-      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
+      <span id="net-status" class="net-status net-checking" title="Checking whether your network can make direct peer-to-peer connections to a patient. Hover the badge once it updates for details.">Checking…</span>
+      <span id="conn-status" class="conn-status" title="Status of the active peer-to-peer session, if one is open. Stays 'Not connected' until you generate a link and a patient joins.">Not connected</span>
+      <a class="text-btn" href="/builder.html" title="Open the form builder">Build a form</a>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Switch between light and dark">◐</button>
     </div>
   </header>
 
@@ -41,14 +42,25 @@
       <div class="dash-head">
         <h1>My forms</h1>
         <div class="dash-head-actions">
-          <button id="btn-import-form" class="secondary" type="button">Import…</button>
-          <button id="btn-new-form" class="primary" type="button">＋ New form</button>
+          <button id="btn-templates"   class="secondary" type="button" title="Start from a ready-made template — medical, legal, hospitality, HR, wellness">From template…</button>
+          <button id="btn-import-form" class="secondary" type="button" title="Paste a YAML-style or JSON definition to create a new form">Import…</button>
+          <button id="btn-new-form"    class="primary"   type="button" title="Start a brand-new empty form">＋ New form</button>
         </div>
       </div>
       <p class="muted">Forms are saved in this browser only — nothing on any server. Open one to edit, create a new one, or import from a text file.</p>
 
       <div id="forms-list" class="forms-list" aria-live="polite"></div>
     </section>
+
+    <!-- Templates picker modal -->
+    <dialog id="templates-dialog" class="dialog">
+      <h2>Start from a template</h2>
+      <p class="muted">Pick a ready-made form to start from. You'll land in the builder with all the questions already in place — edit, add, remove, then generate the link.</p>
+      <div id="templates-list" class="templates-grid"></div>
+      <div class="actions">
+        <button id="btn-templates-cancel" class="secondary" type="button">Cancel</button>
+      </div>
+    </dialog>
 
     <!-- Import modal -->
     <dialog id="import-dialog" class="dialog">

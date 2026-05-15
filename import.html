@@ -10,13 +10,13 @@
   <meta name="robots" content="noindex">
   <link rel="icon" href="/icons/favicon.svg">
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/css/style.css?v=7">
-  <script src="/js/theme.js?v=7" defer></script>
-  <script src="/js/netcheck.js?v=7" defer></script>
-  <script src="/js/storage.js?v=7" defer></script>
-  <script src="/js/import.js?v=7" defer></script>
-  <script src="/js/footer.js?v=7" defer></script>
-  <script src="/js/analytics.js?v=7" defer></script>
+  <link rel="stylesheet" href="/css/style.css?v=8">
+  <script src="/js/theme.js?v=8" defer></script>
+  <script src="/js/netcheck.js?v=8" defer></script>
+  <script src="/js/storage.js?v=8" defer></script>
+  <script src="/js/import.js?v=8" defer></script>
+  <script src="/js/footer.js?v=8" defer></script>
+  <script src="/js/analytics.js?v=8" defer></script>
 </head>
 <body class="app-page import-page" data-page="import">
   <header class="topbar">
@@ -28,20 +28,46 @@
       <a href="/received.html">Received</a>
     </nav>
     <div class="topbar-actions">
-      <span id="net-status" class="net-status net-checking" title="Checking outbound connectivity to STUN…">Checking…</span>
-      <span id="conn-status" class="conn-status">Not connected</span>
-      <a class="text-btn" href="/builder.html">Build a form</a>
-      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
+      <span id="net-status" class="net-status net-checking" title="Checking whether your network can make direct peer-to-peer connections to a patient. Hover the badge once it updates for details.">Checking…</span>
+      <span id="conn-status" class="conn-status" title="Status of the active peer-to-peer session, if one is open. Stays 'Not connected' until you generate a link and a patient joins.">Not connected</span>
+      <a class="text-btn" href="/builder.html" title="Open the form builder">Build a form</a>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Switch between light and dark">◐</button>
     </div>
   </header>
 
   <main class="app-main">
     <section class="step">
       <h1>Import a form</h1>
-      <p class="muted">ProxForm reads two formats: a <strong>YAML-style indented file</strong> (human-friendly, easy to write in any text editor) or <strong>JSON</strong> (machine-friendly, what the <em>Export</em> button produces). Paste either into the box at the bottom of this page and click <em>Create form</em>.</p>
+      <p class="muted">ProxForm reads two formats: a <strong>YAML-style indented file</strong> (human-friendly, easy to write in any text editor) or <strong>JSON</strong> (machine-friendly, what the <em>Export</em> button produces). Paste into the box below and click <em>Create form</em>, or scroll down for the syntax reference.</p>
 
-      <h2>The two-minute version</h2>
-      <p>A complete form definition looks like this:</p>
+      <div class="import-area-top">
+        <label>
+          <span>Paste form definition</span>
+          <textarea id="import-text" rows="10" spellcheck="false" placeholder="title: My form
+description: ...
+
+# Section
+text*  half  Question..."></textarea>
+        </label>
+
+        <label class="file-row">
+          <span>…or upload a .txt / .json file</span>
+          <input id="import-file" type="file" accept=".txt,.json,.yaml,.yml,text/plain,application/json">
+        </label>
+
+        <p id="import-error" class="error hidden"></p>
+
+        <div class="actions">
+          <button id="btn-import-do"    class="primary"   type="button">Create form <span class="arrow">→</span></button>
+          <button id="btn-import-clear" class="secondary" type="button">Clear</button>
+        </div>
+      </div>
+
+      <div class="docs-cols">
+
+          <section class="docs-card">
+            <h2>The two-minute version</h2>
+            <p>A complete form definition looks like this:</p>
 <pre class="import-doc"><code>title: Pre-appointment intake
 description: Please fill this in before your visit.
 
@@ -54,123 +80,232 @@ text     half    Email
 # Reason for Visit
 textarea*        Primary reason for visit
 yesno            Have you been treated for this before?</code></pre>
-      <p>Each non-blank line is either form metadata, a section header, a field, or an option attached to a field above. The whole file is saved locally in your browser — never uploaded anywhere.</p>
+            <p>Each non-blank line is either form metadata, a section header, a field, or an option attached to a field above. The whole file is saved locally in your browser — never uploaded anywhere.</p>
+          </section>
 
-      <h2>Syntax reference</h2>
-
-      <h3>Form metadata</h3>
-      <p>Two keys, both optional but both highly recommended:</p>
+          <section class="docs-card">
+            <h3>Form metadata</h3>
+            <p>Three keys, all optional:</p>
 <pre class="import-doc"><code>title: Pre-appointment intake
 description: Please fill this in before your visit.</code></pre>
-      <ul class="why-list">
-        <li><code>title:</code> &mdash; The form's name. Shows up in the patient's view and in your forms list.</li>
-        <li><code>description:</code> &mdash; A one-line note shown under the title. Useful for instructions.</li>
-      </ul>
+            <ul class="why-list">
+              <li><code>title:</code> &mdash; The form's name. Shows up in the patient's view and in your forms list.</li>
+              <li><code>description:</code> &mdash; A one-line note shown under the title.</li>
+              <li><code>numbered: true</code> &mdash; Auto-numbers questions (<code>1.</code>, <code>2.</code>, …); sections aren't counted.</li>
+            </ul>
+          </section>
 
-      <h3>Section headers</h3>
-      <p>A line starting with <code>#</code> creates a section band that groups the fields below it. Sections have no inputs &mdash; they're labels. An optional indented <code>&gt;</code> line directly under the section attaches a short description that shows beneath the title.</p>
+          <section class="docs-card">
+            <h3>Section headers</h3>
+            <p>A line starting with <code>#</code> creates a section band that groups the fields below it. An optional indented <code>&gt;</code> line directly under the section attaches a short description.</p>
 <pre class="import-doc"><code># Patient Information
                  &gt; Required so we can match you with your record.
 # Medical History
 # Consent &amp; Signatures</code></pre>
+          </section>
 
-      <h3>Fields</h3>
-      <p>The general field syntax is:</p>
-<pre class="import-doc"><code>&lt;type&gt;[*] [half|full] &lt;label&gt;</code></pre>
-      <ul class="why-list">
-        <li><code>&lt;type&gt;</code> &mdash; one of the eight supported types (see below).</li>
-        <li><code>*</code> &mdash; optional. If present, the field is required.</li>
-        <li><code>half</code> &mdash; optional. Pairs the field on a row with the next half-width field, so two questions sit side-by-side. Default is full-width.</li>
-        <li><code>&lt;label&gt;</code> &mdash; the question text the patient sees.</li>
-      </ul>
+          <section class="docs-card">
+            <h3>Fields</h3>
+            <p>The general field syntax is:</p>
+<pre class="import-doc"><code>&lt;type&gt;[*] [half|third|quarter|full] &lt;label&gt;</code></pre>
+            <ul class="why-list">
+              <li><code>&lt;type&gt;</code> &mdash; one of the supported types (see below).</li>
+              <li><code>*</code> &mdash; if present, the field is required.</li>
+              <li><code>half</code> / <code>third</code> / <code>quarter</code> &mdash; optional column width. Consecutive same-width fields share a row.</li>
+              <li><code>&lt;label&gt;</code> &mdash; the question text the patient sees.</li>
+            </ul>
+          </section>
 
-      <h3>The eight field types</h3>
-      <div class="import-types">
-        <div class="import-type">
-          <h4><code>text</code></h4>
-          <p>Single-line text input.</p>
+          <section class="docs-card">
+            <h3>Column-width examples</h3>
+<pre class="import-doc"><code>text*    half     First name
+text*    half     Last name
+
+number   third    Day
+number   third    Month
+number   third    Year
+
+text     quarter  DD
+text     quarter  MM
+text     quarter  YYYY
+text     quarter  CVV</code></pre>
+          </section>
+
+          <section class="docs-card">
+            <h3>The supported field types</h3>
+            <div class="import-types">
+              <div class="import-type">
+                <h4><code>text</code></h4>
+                <p>Single-line text input.</p>
 <pre class="import-doc"><code>text*    half    Full name
 text             Allergies (none if blank)</code></pre>
-        </div>
+              </div>
 
-        <div class="import-type">
-          <h4><code>textarea</code></h4>
-          <p>Multi-line text input for longer answers.</p>
+              <div class="import-type">
+                <h4><code>textarea</code></h4>
+                <p>Multi-line text input for longer answers.</p>
 <pre class="import-doc"><code>textarea*        Describe your symptoms
 textarea         Anything else we should know?</code></pre>
-        </div>
+              </div>
 
-        <div class="import-type">
-          <h4><code>number</code></h4>
-          <p>Numeric input (with the browser's number keyboard on mobile).</p>
+              <div class="import-type">
+                <h4><code>number</code></h4>
+                <p>Numeric input (with the number keyboard on mobile).</p>
 <pre class="import-doc"><code>number*  half    Weight (kg)
 number   half    Height (cm)</code></pre>
-        </div>
+              </div>
 
-        <div class="import-type">
-          <h4><code>date</code></h4>
-          <p>Date picker.</p>
+              <div class="import-type">
+                <h4><code>date</code></h4>
+                <p>Date picker.</p>
 <pre class="import-doc"><code>date*    half    Date of birth
 date             Date of last vaccination</code></pre>
-        </div>
+              </div>
 
-        <div class="import-type">
-          <h4><code>radio</code></h4>
-          <p>Single-choice from a list. Options go on indented <code>- value</code> lines directly below.</p>
+              <div class="import-type">
+                <h4><code>radio</code></h4>
+                <p>Single-choice from a list. Options go on indented <code>- value</code> lines.</p>
 <pre class="import-doc"><code>radio*           Preferred contact method
                  - Email
                  - Phone
                  - SMS</code></pre>
-        </div>
+              </div>
 
-        <div class="import-type">
-          <h4><code>checkbox</code></h4>
-          <p>Multi-choice from a list. Same indented-options syntax as <code>radio</code>.</p>
+              <div class="import-type">
+                <h4><code>checkbox</code></h4>
+                <p>Multi-choice from a list. Same indented-options syntax as <code>radio</code>.</p>
 <pre class="import-doc"><code>checkbox         Existing conditions (tick all that apply)
                  - Diabetes
                  - Hypertension
                  - Heart disease
                  - Asthma
                  - None of the above</code></pre>
-        </div>
+              </div>
 
-        <div class="import-type">
-          <h4><code>yesno</code></h4>
-          <p>Two-button Yes/No choice. No options needed &mdash; the type implies them.</p>
+              <div class="import-type">
+                <h4><code>yesno</code></h4>
+                <p>Two-button Yes/No choice. No options needed.</p>
 <pre class="import-doc"><code>yesno*           Are you currently pregnant?
 yesno            Have you had this treatment before?</code></pre>
-        </div>
+              </div>
 
-        <div class="import-type">
-          <h4><code>section</code></h4>
-          <p>Not used as <code>section</code> directly &mdash; use <code>#</code> at the start of a line instead. This is the type stored internally when you write <code>#</code>.</p>
-        </div>
-      </div>
+              <div class="import-type">
+                <h4><code>file</code></h4>
+                <p>Patient attaches a file (camera-friendly on mobile). Base64-encoded and streamed peer-to-peer. Max 5 MB. In JSON set <code>"accept"</code> to restrict the picker.</p>
+<pre class="import-doc"><code>file*    half    Photo of your ID
+file             Insurance card</code></pre>
+              </div>
 
-      <h3>Help text under a field</h3>
-      <p>A line starting with <code>&gt;</code> right under a field (indented) attaches a one-line hint shown under the question on both the preview and the patient's view. The same syntax attaches a description to a section if it sits under a <code>#</code> header instead.</p>
+              <div class="import-type">
+                <h4><code>signature</code></h4>
+                <p>Drawing pad for a handwritten signature. Finger, mouse, or stylus. Flattened to a base64 PNG and travels over the same chunked peer-to-peer path.</p>
+<pre class="import-doc"><code>signature*       Patient signature
+signature        Counter-signature (optional)</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section class="docs-card">
+            <h3>Help text under a field</h3>
+            <p>A line starting with <code>&gt;</code> right under a field (indented) attaches a one-line hint shown under the question on both the preview and the patient's view. The same syntax attaches a description to a section if it sits under a <code>#</code> header.</p>
 <pre class="import-doc"><code>text*    half    Phone
                  &gt; Best number to reach you during the day
 
 number*          Weight (kg)
                  &gt; Round to the nearest whole number</code></pre>
+          </section>
 
-      <h3>Comments</h3>
-      <p>Lines starting with <code>//</code> are ignored. Useful for notes or to temporarily disable a field while you're iterating.</p>
+          <section class="docs-card">
+            <h3>Default values</h3>
+            <p>A line starting with <code>=</code> right under a field (indented) sets a default answer the patient sees pre-filled. The patient can still change it. Sections don't take defaults.</p>
+<pre class="import-doc"><code>text             Country
+                 = Belgium
+
+radio*           Visit type
+                 - First visit
+                 - Follow-up
+                 - Urgent
+                 = Follow-up
+
+yesno            Pregnant?
+                 = no
+
+date             Next appointment
+                 = 2026-06-01</code></pre>
+            <p>For <code>checkbox</code> fields, repeat the <code>=</code> line to pre-select multiple values:</p>
+<pre class="import-doc"><code>checkbox         Allergies
+                 - Pollen
+                 - Latex
+                 = Pollen</code></pre>
+          </section>
+
+          <section class="docs-card">
+            <h3>Validation rules</h3>
+            <p>A line starting with <code>!</code> right under a field (indented) attaches a validation rule. The patient's browser enforces it on submit — invalid values show the browser's native error bubble and block sending. One rule per line; repeat the prefix to stack rules.</p>
+<pre class="import-doc"><code>number*          Weight (kg)
+                 ! min=0
+                 ! max=500
+
+text*            Username
+                 ! minlen=3
+                 ! maxlen=20
+
+text             Belgian VAT number
+                 ! pattern=^BE\d{10}$
+                 &gt; Format: BE followed by 10 digits</code></pre>
+            <ul class="why-list">
+              <li><strong><code>min</code> / <code>max</code></strong> — numeric bounds (only on <code>number</code>).</li>
+              <li><strong><code>minlen</code> / <code>maxlen</code></strong> — character-count bounds (on <code>text</code> / <code>textarea</code>).</li>
+              <li><strong><code>pattern</code></strong> — JavaScript regex the whole value must match (only on <code>text</code>). No slashes; engine anchors implicitly.</li>
+            </ul>
+          </section>
+
+          <section class="docs-card">
+            <h3>Comments</h3>
+            <p>Lines starting with <code>//</code> are ignored. Useful for notes or to temporarily disable a field while iterating.</p>
 <pre class="import-doc"><code>// TODO: ask legal whether we need to collect insurance ID here
 // text*    half    Insurance member ID
 
 text*    half    Full name</code></pre>
+          </section>
 
-      <h3>What gets validated</h3>
-      <ul class="why-list">
-        <li>Unknown field types raise an error on import &mdash; only the eight listed types are accepted.</li>
-        <li>Every <code>radio</code> and <code>checkbox</code> needs at least one option, otherwise the import fails.</li>
-        <li>Pairs of consecutive <code>half</code>-width fields land on the same row. A lone <code>half</code> followed by a <code>full</code> just takes the left column.</li>
-      </ul>
+          <section class="docs-card">
+            <h3>What gets validated on import</h3>
+            <ul class="why-list">
+              <li>Unknown field types raise an error — only the supported types are accepted.</li>
+              <li>Every <code>radio</code> and <code>checkbox</code> needs at least one option.</li>
+              <li>Pairs of consecutive <code>half</code>-width fields land on the same row; a lone <code>half</code> just takes the left column.</li>
+            </ul>
+          </section>
 
-      <h2>Full annotated example</h2>
-      <p>Copy this, tweak the labels, and paste it into the box at the bottom of this page.</p>
+          <section class="docs-card">
+            <h3>Multi-page forms</h3>
+            <p>Splitting a long form keeps the patient focused. The patient view inserts Prev / Next buttons at each break and validates required fields per page before advancing. The builder previews the breaks as a striped divider but doesn't paginate so you can edit any field.</p>
+<pre class="import-doc"><code>--- Step 2: Medical history</code></pre>
+            <p>In JSON: <code>{ "type": "pagebreak", "label": "Step 2: Medical history" }</code>. Label optional.</p>
+          </section>
+
+          <section class="docs-card">
+            <h3>Conditional logic (show/hide)</h3>
+            <p>A field can appear only when another field has a specific answer. Configure it in the builder. In JSON it's a per-field <code>showIf</code> object:</p>
+<pre class="import-doc"><code>{ "id": "f2", "type": "textarea", "label": "Tell us more",
+  "showIf": { "field": "f1", "op": "equals", "value": "Yes" } }</code></pre>
+            <p>Operators: <code>equals</code>, <code>notEquals</code>, <code>contains</code>, <code>notContains</code>, <code>empty</code>, <code>notEmpty</code>. Hidden fields are skipped during required-field validation. YAML doesn't carry <code>showIf</code> yet.</p>
+          </section>
+
+          <section class="docs-card">
+            <h3>Common mistakes</h3>
+            <ul class="why-list">
+              <li><strong>Option line not indented.</strong> Options for <code>radio</code> / <code>checkbox</code> must start with whitespace, then <code>-</code>, then the value.</li>
+              <li><strong>Forgot the required star.</strong> <code>*</code> goes immediately after the type, no space.</li>
+              <li><strong>Lone <code>half</code>.</strong> Only pairs with the next half-width field.</li>
+              <li><strong>Unsupported types.</strong> Rich text and multi-file aren't in v1.</li>
+            </ul>
+          </section>
+
+          <section class="docs-card">
+            <h2>Full annotated example</h2>
+            <p>Copy this, tweak the labels, paste it into the box at the top of the page.</p>
 <pre class="import-doc"><code>title: Pre-appointment intake
 description: Please fill this in before your visit on Tuesday.
 
@@ -202,11 +337,10 @@ text             Allergies (write "none" if applicable)
 
 # Consent
 yesno*           I consent to my data being processed for this appointment.</code></pre>
+          </section>
 
-      <h2>Templates by industry</h2>
-      <p>Same format, different verticals.</p>
-
-      <h3>Legal &mdash; client intake</h3>
+          <section class="docs-card">
+            <h3>Legal &mdash; client intake</h3>
 <pre class="import-doc"><code>title: New client intake
 description: Bring photo ID to your first meeting.
 
@@ -232,8 +366,10 @@ yesno*           Have you retained other counsel on this matter?
 # Conflict check
 text             Opposing party (if known)
 text             Other parties involved</code></pre>
+          </section>
 
-      <h3>Hospitality &mdash; boutique hotel check-in</h3>
+          <section class="docs-card">
+            <h3>Hospitality &mdash; boutique hotel check-in</h3>
 <pre class="import-doc"><code>title: Guest check-in
 description: Quick check-in &mdash; please fill in before arriving at the desk.
 
@@ -257,8 +393,10 @@ checkbox         Dietary requirements
                  - Nut allergy
                  - Lactose-free
 textarea         Special requests or accessibility needs</code></pre>
+          </section>
 
-      <h3>HR &mdash; on-site interview NDA</h3>
+          <section class="docs-card">
+            <h3>HR &mdash; on-site interview NDA</h3>
 <pre class="import-doc"><code>title: Interview NDA &amp; consent
 description: Sign in before your interview.
 
@@ -275,8 +413,10 @@ yesno            I consent to being filmed for security purposes.
 
 # Optional
 textarea         Comments for the recruiter</code></pre>
+          </section>
 
-      <h3>Wellness &mdash; tattoo studio waiver</h3>
+          <section class="docs-card">
+            <h3>Wellness &mdash; tattoo studio waiver</h3>
 <pre class="import-doc"><code>title: Tattoo consent &amp; medical history
 description: Required before any session. Please answer honestly.
 
@@ -300,9 +440,11 @@ checkbox         Allergies (tick all that apply)
 # Consent
 yesno*           I understand the procedure and risks.
 yesno*           I confirm I am over 18.</code></pre>
+          </section>
 
-      <h2>JSON format</h2>
-      <p>If you prefer to generate forms programmatically or want a strict, machine-readable format, ProxForm also accepts JSON. The shape is:</p>
+          <section class="docs-card">
+            <h2>JSON format</h2>
+            <p>If you prefer to generate forms programmatically or want a strict, machine-readable format, ProxForm also accepts JSON:</p>
 <pre class="import-doc"><code>{
   "title": "Pre-appointment intake",
   "description": "Please fill this in before your visit.",
@@ -322,39 +464,10 @@ yesno*           I confirm I am over 18.</code></pre>
     }
   ]
 }</code></pre>
-      <p class="muted">An exported form (with the <em>Export</em> button on the forms list) drops in directly &mdash; you can use it as a backup, share a template with a colleague, or generate forms from a script.</p>
+            <p class="muted">An exported form (with the <em>Export</em> button on the forms list) drops in directly &mdash; use it as a backup, share a template with a colleague, or generate forms from a script.</p>
+          </section>
 
-      <h2>Common mistakes</h2>
-      <ul class="why-list">
-        <li><strong>Option line not indented.</strong> Options for <code>radio</code> and <code>checkbox</code> must start with whitespace, then <code>-</code>, then the value. An un-indented <code>- value</code> is treated as an unknown field type.</li>
-        <li><strong>Forgot the required star.</strong> <code>*</code> goes immediately after the type, with no space: <code>text*</code>, not <code>text *</code>.</li>
-        <li><strong>Lone <code>half</code>.</strong> <code>half</code> only pairs with the next half-width field. If you put <code>half</code> on the last field of a section, it sits alone.</li>
-        <li><strong>Unsupported types.</strong> File uploads, signatures, and rich text aren't in v1 &mdash; only the eight types listed above.</li>
-      </ul>
-
-      <h2 id="import-area">Import your form</h2>
-      <p>Paste your form definition below (YAML-style or JSON) or upload a <code>.txt</code> / <code>.json</code> file. We'll parse it, save it locally on this device only, and open it in the builder.</p>
-
-      <label>
-        <span>Paste form definition</span>
-        <textarea id="import-text" rows="14" spellcheck="false" placeholder="title: My form
-description: ...
-
-# Section
-text*  half  Question..."></textarea>
-      </label>
-
-      <label class="file-row">
-        <span>…or upload a .txt / .json file</span>
-        <input id="import-file" type="file" accept=".txt,.json,.yaml,.yml,text/plain,application/json">
-      </label>
-
-      <p id="import-error" class="error hidden"></p>
-
-      <div class="actions">
-        <button id="btn-import-do" class="primary" type="button">Create form <span class="arrow">→</span></button>
-        <button id="btn-import-clear" class="secondary" type="button">Clear</button>
-      </div>
+      </div><!-- /.docs-cols -->
     </section>
   </main>
 
