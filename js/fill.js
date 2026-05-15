@@ -345,24 +345,134 @@ function arrayBufferToBase64(buf) {
   return btoa(s);
 }
 
+// Sniff a file's actual format from its first bytes. Returns the canonical
+// MIME we trust, or null if the signature doesn't match any known image / PDF
+// format. Used to catch renamed files (.exe → .png) that the browser would
+// otherwise accept based on the extension alone.
+function detectMime(bytes) {
+  if (!bytes || bytes.length < 4) return null;
+  const b = bytes;
+  // JPEG: FF D8 FF
+  if (b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return 'image/jpeg';
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47) return 'image/png';
+  // GIF87a / GIF89a: 47 49 46 38 (3|9) 61
+  if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38) return 'image/gif';
+  // WebP: 52 49 46 46 .. .. .. .. 57 45 42 50 ("RIFF....WEBP")
+  if (b.length >= 12 && b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46
+      && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return 'image/webp';
+  // BMP: 42 4D
+  if (b[0] === 0x42 && b[1] === 0x4D) return 'image/bmp';
+  // TIFF: 49 49 2A 00 (little-endian) or 4D 4D 00 2A (big-endian)
+  if ((b[0] === 0x49 && b[1] === 0x49 && b[2] === 0x2A && b[3] === 0x00) ||
+      (b[0] === 0x4D && b[1] === 0x4D && b[2] === 0x00 && b[3] === 0x2A)) return 'image/tiff';
+  // HEIC / HEIF: bytes 4-11 contain "ftyp" followed by a heic/heix/mif1 brand
+  if (b.length >= 12 && b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70) {
+    const brand = String.fromCharCode(b[8], b[9], b[10], b[11]);
+    if (['heic','heix','heif','mif1','hevc','hevx'].indexOf(brand) !== -1) return 'image/heic';
+    if (brand === 'avif') return 'image/avif';
+  }
+  // PDF: 25 50 44 46 ("%PDF")
+  if (b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46) return 'application/pdf';
+  return null;
+}
+
+// Decide whether a sniffed MIME satisfies the field's `accept` declaration.
+function mimeMatchesAccept(detected, accept) {
+  if (!accept || accept === '*/*' || accept === '') return true;
+  if (!detected) return false;
+  const tokens = String(accept).toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+  const lower = detected.toLowerCase();
+  for (const t of tokens) {
+    if (t === lower) return true;
+    if (t.endsWith('/*') && lower.startsWith(t.slice(0, -1))) return true;  // image/* → image/
+    if (t.startsWith('.')) {
+      // crude extension-to-mime mapping for the common ones we sniff
+      const map = {
+        '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+        '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp',
+        '.tif': 'image/tiff', '.tiff': 'image/tiff',
+        '.heic': 'image/heic', '.heif': 'image/heic', '.avif': 'image/avif',
+        '.pdf': 'application/pdf'
+      };
+      if (map[t] === lower) return true;
+    }
+  }
+  return false;
+}
+
 async function handleFilePick(input) {
   const id = input.dataset.field;
   const file = input.files && input.files[0];
   if (!file) { delete answers[id]; applyConditional(); saveAnswersDraft(); return; }
-  if (file.size > MAX_FILE_SIZE) {
-    toast('File too large (max ' + Math.floor(MAX_FILE_SIZE / (1024 * 1024)) + ' MB). Pick a smaller one.');
+  // Per-field max-size (in MB) wins when set, falling back to the global 5 MB
+  // cap. Both are enforced as a hard upper bound before we attempt to read the
+  // file into memory.
+  const field = (form.fields || []).find(x => x.id === id) || {};
+  const perFieldMB = field.validation && Number(field.validation.maxsize);
+  const limit = (perFieldMB && perFieldMB > 0)
+    ? Math.min(perFieldMB * 1024 * 1024, MAX_FILE_SIZE)
+    : MAX_FILE_SIZE;
+  if (file.size > limit) {
+    const limitMB = Math.round(limit / (1024 * 1024) * 10) / 10;
+    toast('File too large (max ' + limitMB + ' MB for this field). Pick a smaller one.');
     input.value = '';
     delete answers[id];
     return;
   }
-  try {
-    const buf = await file.arrayBuffer();
-    const data = arrayBufferToBase64(buf);
-    answers[id] = { name: file.name, mime: file.type || 'application/octet-stream', size: file.size, data };
-  } catch (e) {
-    toast('Could not read the file: ' + (e.message || e));
-    return;
+  let buf;
+  try { buf = await file.arrayBuffer(); }
+  catch (e) { toast('Could not read the file: ' + (e.message || e)); return; }
+
+  // Sniff actual format from the magic bytes. Catches renamed files (e.g.
+  // foo.exe → photo.png) that the browser would otherwise trust. Only
+  // enforced when the field declares an `accept` (so generic file fields
+  // with accept="*/*" let anything through).
+  const sniffed = detectMime(new Uint8Array(buf.slice(0, 16)));
+  const declaredAccept = field.accept || '';
+  if (declaredAccept && declaredAccept !== '*/*') {
+    if (!mimeMatchesAccept(sniffed, declaredAccept)) {
+      const expected = declaredAccept === 'image/*' ? 'an image' : declaredAccept;
+      toast('This file isn\'t ' + expected + '. Pick a real ' + (declaredAccept === 'image/*' ? 'image (JPEG, PNG, GIF, WebP, HEIC).' : declaredAccept + '.'));
+      input.value = '';
+      delete answers[id];
+      return;
+    }
   }
+
+  const data = arrayBufferToBase64(buf);
+  // Prefer the sniffed MIME over the browser-reported one — file.type is
+  // derived from the extension and can be spoofed.
+  const mime = sniffed || file.type || 'application/octet-stream';
+
+  // Per-image dimension limits — only for images. Load the image off the
+  // base64 we just produced, read naturalWidth/naturalHeight, reject if any
+  // of minwidth / maxwidth / minheight / maxheight is violated.
+  const v = field.validation || {};
+  const hasDim = v.minwidth || v.maxwidth || v.minheight || v.maxheight;
+  if (mime.startsWith('image/') && hasDim) {
+    const ok = await new Promise((resolve) => {
+      const probe = new Image();
+      probe.onload  = () => resolve({ w: probe.naturalWidth, h: probe.naturalHeight });
+      probe.onerror = () => resolve(null);
+      probe.src = 'data:' + mime + ';base64,' + data;
+    });
+    if (!ok) {
+      toast('Could not read image dimensions. Pick a different file.');
+      input.value = ''; delete answers[id]; return;
+    }
+    const fails = [];
+    if (v.minwidth  && ok.w < Number(v.minwidth))  fails.push('at least ' + v.minwidth + 'px wide');
+    if (v.maxwidth  && ok.w > Number(v.maxwidth))  fails.push('at most '  + v.maxwidth + 'px wide');
+    if (v.minheight && ok.h < Number(v.minheight)) fails.push('at least ' + v.minheight + 'px tall');
+    if (v.maxheight && ok.h > Number(v.maxheight)) fails.push('at most '  + v.maxheight + 'px tall');
+    if (fails.length) {
+      toast('Image is ' + ok.w + '×' + ok.h + 'px — must be ' + fails.join(', ') + '.');
+      input.value = ''; delete answers[id]; return;
+    }
+  }
+
+  answers[id] = { name: file.name, mime, size: file.size, data };
   // Tiny preview if it's an image.
   const preview = document.querySelector(`[data-file-preview="${id}"]`);
   if (preview) {

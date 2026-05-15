@@ -162,6 +162,12 @@
           if (!isNaN(n)) lastField.validation[k] = n;
         } else if (k === 'pattern') {
           lastField.validation.pattern = raw2;
+        } else if (k === 'maxsize') {
+          const n = Number(raw2);
+          if (!isNaN(n) && n > 0) lastField.validation.maxsize = n;
+        } else if (k === 'minwidth' || k === 'maxwidth' || k === 'minheight' || k === 'maxheight') {
+          const n = parseInt(raw2, 10);
+          if (!isNaN(n) && n > 0) lastField.validation[k] = n;
         }
         continue;
       }
@@ -239,10 +245,57 @@
   // ── JSON format ────────────────────────────────────────────────────────
   // Accepts either the export shape ({form: {...}, answers: {...}}) or a raw
   // form object ({title, description, fields: [...]}).
+  function lineColFromPosition(src, pos) {
+    let line = 1, col = 1;
+    const n = Math.min(pos, src.length);
+    for (let i = 0; i < n; i++) {
+      if (src.charCodeAt(i) === 10) { line++; col = 1; } else { col++; }
+    }
+    return { line, col };
+  }
+
+  // Try to recover the offset of a JSON.parse failure across V8 generations.
+  // Old V8 / SpiderMonkey: "...at position 42" or "...at line 3 column 5".
+  // Modern V8 (Chrome 117+, Node 21+): no position; instead the message
+  // embeds a snippet of the source like: ... "{"a": ,}" is not valid JSON.
+  // We extract the snippet and search the source for its offset.
+  function jsonErrorOffset(msg, src) {
+    let m = /position\s+(\d+)/i.exec(msg);
+    if (m) return parseInt(m[1], 10);
+    m = /line\s+(\d+)\s+column\s+(\d+)/i.exec(msg);
+    if (m) {
+      const ln = parseInt(m[1], 10), col = parseInt(m[2], 10);
+      let off = 0, seen = 1;
+      while (seen < ln && off < src.length) {
+        if (src.charCodeAt(off) === 10) seen++;
+        off++;
+      }
+      return off + Math.max(0, col - 1);
+    }
+    // Modern V8: pull the quoted snippet that comes after `Unexpected token X, `.
+    m = /Unexpected token .*?,\s+"([^]+?)"\s+is not valid JSON/i.exec(msg);
+    if (m && m[1]) {
+      const snippet = m[1];
+      const idx = src.indexOf(snippet);
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  }
+
   function parseJSON(src) {
+    const normalized = normalizeInput(src);
     let obj;
-    try { obj = JSON.parse(normalizeInput(src)); }
-    catch (e) { throw new Error('Invalid JSON — ' + e.message + '. Check for stray commas, missing quotes, or unescaped characters.'); }
+    try { obj = JSON.parse(normalized); }
+    catch (e) {
+      const msg = e && e.message ? String(e.message) : String(e);
+      const off = jsonErrorOffset(msg, normalized);
+      let where = '';
+      if (off >= 0) {
+        const { line, col } = lineColFromPosition(normalized, off);
+        where = ` at line ${line}, column ${col}`;
+      }
+      throw new Error('Invalid JSON' + where + ' — ' + msg + '. Check for stray commas, missing quotes, or unescaped characters.');
+    }
     const form = obj && typeof obj === 'object' && obj.form ? obj.form : obj;
     if (!form || !Array.isArray(form.fields)) {
       throw new Error('JSON must have a "fields" array (or be an exported form object).');
@@ -284,6 +337,10 @@
           if (v.minlen  != null && !isNaN(Number(v.minlen))) vOut.minlen = Number(v.minlen);
           if (v.maxlen  != null && !isNaN(Number(v.maxlen))) vOut.maxlen = Number(v.maxlen);
           if (v.pattern && String(v.pattern).trim())         vOut.pattern = String(v.pattern).trim();
+          if (v.maxsize  != null && !isNaN(Number(v.maxsize)) && Number(v.maxsize) > 0) vOut.maxsize = Number(v.maxsize);
+          for (const k of ['minwidth', 'maxwidth', 'minheight', 'maxheight']) {
+            if (v[k] != null && !isNaN(Number(v[k])) && Number(v[k]) > 0) vOut[k] = Number(v[k]);
+          }
           if (Object.keys(vOut).length) out.validation = vOut;
         }
         if (f.showIf && typeof f.showIf === 'object' && f.showIf.field && f.showIf.op) {
@@ -371,7 +428,7 @@
       }
       if (f.validation && typeof f.validation === 'object') {
         const v = f.validation;
-        for (const k of ['min', 'max', 'minlen', 'maxlen', 'pattern']) {
+        for (const k of ['min', 'max', 'minlen', 'maxlen', 'pattern', 'maxsize', 'minwidth', 'maxwidth', 'minheight', 'maxheight']) {
           if (v[k] == null || v[k] === '') continue;
           out.push('                 ! ' + k + '=' + String(v[k]));
         }
@@ -380,5 +437,39 @@
     return out.join('\n') + '\n';
   }
 
-  window.ProxImport = { parseIndented, parseJSON, parseAuto, toIndented, normalizeInput, validateForm };
+  // ── Summary for the standalone validator UI ───────────────────────────
+  // Counts each kind of field so /import.html can show a quick breakdown
+  // when validation succeeds. Pages = pagebreaks + 1.
+  function summarize(form) {
+    const fields = (form && Array.isArray(form.fields)) ? form.fields : [];
+    const byType = Object.create(null);
+    let questions = 0, sections = 0, pagebreaks = 0;
+    for (const f of fields) {
+      const t = f && f.type;
+      if (!t) continue;
+      byType[t] = (byType[t] || 0) + 1;
+      if (t === 'section')        sections++;
+      else if (t === 'pagebreak') pagebreaks++;
+      else                        questions++;
+    }
+    return {
+      total: fields.length,
+      questions,
+      sections,
+      pages: pagebreaks + 1,
+      byType
+    };
+  }
+
+  // Detect format the same way parseAuto does.
+  function detectFormat(src) {
+    const s = normalizeInput(src).trim();
+    if (!s) return 'empty';
+    return (s[0] === '{' || s[0] === '[') ? 'json' : 'yaml';
+  }
+
+  window.ProxImport = {
+    parseIndented, parseJSON, parseAuto, toIndented,
+    normalizeInput, validateForm, summarize, detectFormat
+  };
 })();

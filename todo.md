@@ -43,6 +43,18 @@ All initial items completed. Kept as a record of what shipped.
 - Tooltips across the topbar controls + add-field chips + lock/undo/redo/test-fill buttons.
 - Custom scrollbar.
 
+## Next up (open work)
+
+19. ✅ **Per-field image-size limit** — `file` / `signature` fields take `! maxsize=N` (MB). Smaller of (per-field, 5 MB global cap) wins. Limit shown under the file input as "Max N MB". Round-trips through YAML + JSON.
+
+20. ✅ **Image format / MIME validation** — magic-byte sniffer in `fill.js` checks the first 16 bytes against JPEG / PNG / GIF / WebP / BMP / TIFF / HEIC / AVIF / PDF signatures. Rejects renamed files that don't match the field's `accept`. The answer is stored with the sniffed MIME, not the browser-reported one.
+
+21. ✅ **Per-image dimension limit** — `! minwidth=N ! maxwidth=N ! minheight=N ! maxheight=N` on image file fields. Image loaded into an `Image` probe, natural dimensions checked, rejected with a specific toast if any rule fails. Builder UI surfaces only when the field accepts images.
+
+22. ✅ **Standalone YAML validator** — *Validate only* button on `/import.html` runs the parser + validator without saving and reports a green "Valid YAML-style" badge with question / section / page counts and a per-type breakdown.
+
+23. ✅ **Standalone JSON validator** — same button covers the JSON path: line/col pointer on `JSON.parse` errors, schema-level checks via the existing `validateForm` (unknown types, missing options, malformed widths, leading/trailing pagebreaks…), and a collapsible *Pretty-printed JSON* drawer when valid.
+
 ## What's still NOT done (intentionally, for now)
 
 - YAML round-trip for `showIf` (use JSON for now or set it in the builder).

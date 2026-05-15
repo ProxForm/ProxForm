@@ -79,7 +79,11 @@ function fieldCell(f, opts) {
   } else if (f.type === 'file') {
     const accept = f.accept ? ` accept="${_esc(f.accept)}"` : '';
     const cap = (f.accept || '').startsWith('image/') ? ' capture="environment"' : '';
+    const sizeNote = (f.validation && f.validation.maxsize)
+      ? `<div class="intake-hint intake-size-note">Max ${_esc(f.validation.maxsize)} MB</div>`
+      : '';
     body = `<input type="file" data-field="${f.id}" data-type="file"${accept}${cap}${req}${disabled}>
+            ${sizeNote}
             <div class="file-preview" data-file-preview="${f.id}"></div>`;
   } else if (f.type === 'signature') {
     body = `

@@ -825,7 +825,60 @@ html[data-theme="dark"] .import-area-top {
 .import-area-top .file-row input[type="file"] {
   padding: 0.4rem 0; border: none; background: transparent;
 }
-.import-area-top .actions { margin-top: 0.75rem; display: flex; gap: 0.6rem; }
+.import-area-top .actions { margin-top: 0.75rem; display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+/* Validate-only result panel — green-light pop-art card with stats and an
+   optional pretty-printed JSON drawer. Shown after a successful parse. */
+.import-result {
+  margin-top: 0.85rem;
+  padding: 0.8rem 0.95rem;
+  background: var(--surface-2);
+  border: 2px solid #0f0f0f;
+  border-radius: var(--radius);
+  box-shadow: 3px 3px 0 #0f0f0f;
+  font-size: 0.9rem;
+}
+html[data-theme="dark"] .import-result {
+  border-color: var(--accent);
+  box-shadow: 3px 3px 0 var(--accent);
+}
+.import-result-head {
+  display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+.import-result .ok-badge {
+  background: var(--accent); color: #0f0f0f;
+  border: 1.5px solid #0f0f0f;
+  border-radius: 4px;
+  padding: 1px 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.import-result-stats {
+  display: flex; flex-wrap: wrap; gap: 0.4rem 0.7rem;
+  color: var(--muted);
+}
+.import-result-stats .kv strong { color: var(--fg, inherit); margin-right: 0.2em; }
+.import-result-stats .kv-sep { opacity: 0.5; }
+.import-result-pretty { margin-top: 0.7rem; }
+.import-result-pretty summary {
+  cursor: pointer; font-weight: 600; padding: 0.15rem 0;
+  color: var(--muted);
+}
+.import-result-pretty pre {
+  margin: 0.4rem 0 0;
+  padding: 0.7rem 0.85rem;
+  max-height: 360px;
+  overflow: auto;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
 
 /* Two-column docs. Every card lives in the same CSS multi-column flow so
    they pack tight top-to-bottom in each column with no empty rows. */

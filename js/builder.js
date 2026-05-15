@@ -823,6 +823,33 @@ function fieldEditor(f, i) {
         </label>
       ` : ''}
     `;
+  } else if (f.type === 'file' || f.type === 'signature') {
+    const isFile = f.type === 'file';
+    const wantsImage = isFile && (!f.accept || f.accept === 'image/*' || (f.accept || '').startsWith('image/'));
+    validationFields = `
+      <label class="sub inline">
+        <span>Max size <span class="muted">(MB)</span></span>
+        <input type="number" min="0" step="0.5" data-field-val="maxsize" data-id="${f.id}" value="${v.maxsize != null ? escapeHtml(v.maxsize) : ''}" placeholder="5">
+      </label>
+      ${wantsImage ? `
+        <label class="sub inline">
+          <span>Min width <span class="muted">(px)</span></span>
+          <input type="number" min="0" step="1" data-field-val="minwidth" data-id="${f.id}" value="${v.minwidth != null ? escapeHtml(v.minwidth) : ''}" placeholder="any">
+        </label>
+        <label class="sub inline">
+          <span>Max width <span class="muted">(px)</span></span>
+          <input type="number" min="0" step="1" data-field-val="maxwidth" data-id="${f.id}" value="${v.maxwidth != null ? escapeHtml(v.maxwidth) : ''}" placeholder="any">
+        </label>
+        <label class="sub inline">
+          <span>Min height <span class="muted">(px)</span></span>
+          <input type="number" min="0" step="1" data-field-val="minheight" data-id="${f.id}" value="${v.minheight != null ? escapeHtml(v.minheight) : ''}" placeholder="any">
+        </label>
+        <label class="sub inline">
+          <span>Max height <span class="muted">(px)</span></span>
+          <input type="number" min="0" step="1" data-field-val="maxheight" data-id="${f.id}" value="${v.maxheight != null ? escapeHtml(v.maxheight) : ''}" placeholder="any">
+        </label>
+      ` : ''}
+    `;
   }
   const validationHtml = (isStructural || !validationFields) ? '' : `
     <div class="field-validation">
@@ -1335,6 +1362,12 @@ function buildFormSnapshot() {
         if ((f.type === 'text' || f.type === 'textarea') && Number.isInteger(Number(v.minlen)) && Number(v.minlen) > 0) vOut.minlen = Number(v.minlen);
         if ((f.type === 'text' || f.type === 'textarea') && Number.isInteger(Number(v.maxlen)) && Number(v.maxlen) > 0) vOut.maxlen = Number(v.maxlen);
         if ((f.type === 'text') && v.pattern && String(v.pattern).trim()) vOut.pattern = String(v.pattern).trim();
+        if ((f.type === 'file' || f.type === 'signature') && Number.isFinite(Number(v.maxsize)) && Number(v.maxsize) > 0) vOut.maxsize = Number(v.maxsize);
+        if (f.type === 'file') {
+          for (const k of ['minwidth', 'maxwidth', 'minheight', 'maxheight']) {
+            if (Number.isInteger(Number(v[k])) && Number(v[k]) > 0) vOut[k] = Number(v[k]);
+          }
+        }
         if (Object.keys(vOut).length) out.validation = vOut;
         if (f.showIf && f.showIf.field && f.showIf.op) {
           out.showIf = {

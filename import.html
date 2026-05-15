@@ -10,13 +10,13 @@
   <meta name="robots" content="noindex">
   <link rel="icon" href="/icons/favicon.svg">
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/css/style.css?v=8">
-  <script src="/js/theme.js?v=8" defer></script>
-  <script src="/js/netcheck.js?v=8" defer></script>
-  <script src="/js/storage.js?v=8" defer></script>
-  <script src="/js/import.js?v=8" defer></script>
-  <script src="/js/footer.js?v=8" defer></script>
-  <script src="/js/analytics.js?v=8" defer></script>
+  <link rel="stylesheet" href="/css/style.css?v=9">
+  <script src="/js/theme.js?v=9" defer></script>
+  <script src="/js/netcheck.js?v=9" defer></script>
+  <script src="/js/storage.js?v=9" defer></script>
+  <script src="/js/import.js?v=9" defer></script>
+  <script src="/js/footer.js?v=9" defer></script>
+  <script src="/js/analytics.js?v=9" defer></script>
 </head>
 <body class="app-page import-page" data-page="import">
   <header class="topbar">
@@ -56,10 +56,12 @@ text*  half  Question..."></textarea>
         </label>
 
         <p id="import-error" class="error hidden"></p>
+        <div id="import-result" class="import-result hidden" aria-live="polite"></div>
 
         <div class="actions">
-          <button id="btn-import-do"    class="primary"   type="button">Create form <span class="arrow">→</span></button>
-          <button id="btn-import-clear" class="secondary" type="button">Clear</button>
+          <button id="btn-import-do"       class="primary"   type="button">Create form <span class="arrow">→</span></button>
+          <button id="btn-import-validate" class="secondary" type="button" title="Parse and validate without saving — useful for linting a file you're hand-editing">Validate only</button>
+          <button id="btn-import-clear"    class="secondary" type="button">Clear</button>
         </div>
       </div>
 
@@ -501,11 +503,49 @@ yesno*           I confirm I am over 18.</code></pre>
         toast._t = setTimeout(() => el.classList.add('hidden'), 3000);
       }
       function showError(msg) {
+        hideResult();
         const el = $('import-error');
         el.textContent = msg;
         el.classList.remove('hidden');
       }
       function hideError() { $('import-error').classList.add('hidden'); }
+      function hideResult() {
+        const el = $('import-result');
+        el.classList.add('hidden');
+        el.innerHTML = '';
+      }
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => (
+          { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
+        ));
+      }
+      function showSuccess(parsed, format) {
+        hideError();
+        const stats = ProxImport.summarize(parsed);
+        const typeBits = Object.keys(stats.byType).sort().map(k =>
+          `<span class="kv"><strong>${stats.byType[k]}</strong> ${escapeHtml(k)}</span>`
+        ).join('');
+        const fmtLabel = format === 'json' ? 'JSON' : 'YAML-style';
+        const title = escapeHtml(parsed.title || '(untitled form)');
+        let pretty = '';
+        if (format === 'json') {
+          try { pretty = JSON.stringify(parsed, null, 2); } catch (_) {}
+        }
+        const prettyBlock = pretty
+          ? `<details class="import-result-pretty"><summary>Pretty-printed JSON</summary><pre><code>${escapeHtml(pretty)}</code></pre></details>`
+          : '';
+        const el = $('import-result');
+        el.innerHTML =
+          `<div class="import-result-head"><span class="ok-badge">Valid ${fmtLabel}</span> <strong>${title}</strong></div>` +
+          `<div class="import-result-stats">` +
+            `<span class="kv"><strong>${stats.questions}</strong> question${stats.questions === 1 ? '' : 's'}</span>` +
+            `<span class="kv"><strong>${stats.sections}</strong> section${stats.sections === 1 ? '' : 's'}</span>` +
+            `<span class="kv"><strong>${stats.pages}</strong> page${stats.pages === 1 ? '' : 's'}</span>` +
+            (typeBits ? `<span class="kv-sep">·</span>${typeBits}` : '') +
+          `</div>` +
+          prettyBlock;
+        el.classList.remove('hidden');
+      }
       async function readFile() {
         const f = $('import-file').files && $('import-file').files[0];
         return f ? await f.text() : null;
@@ -526,10 +566,27 @@ yesno*           I confirm I am over 18.</code></pre>
           $('import-text').value = '';
           $('import-file').value = '';
           hideError();
+          hideResult();
+        });
+
+        $('btn-import-validate').addEventListener('click', async () => {
+          hideError();
+          hideResult();
+          let text = $('import-text').value;
+          if (!text || !text.trim()) {
+            try { text = await readFile() || ''; } catch (_) {}
+          }
+          if (!text || !text.trim()) { showError('Paste a definition or pick a file first.'); return; }
+          const format = ProxImport.detectFormat(text);
+          let parsed;
+          try { parsed = ProxImport.parseAuto(text); }
+          catch (e) { showError(e.message || String(e)); return; }
+          showSuccess(parsed, format);
         });
 
         $('btn-import-do').addEventListener('click', async () => {
           hideError();
+          hideResult();
           let text = $('import-text').value;
           if (!text || !text.trim()) {
             try { text = await readFile() || ''; } catch (_) {}
