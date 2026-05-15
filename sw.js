@@ -12,6 +12,7 @@ const ASSETS = [
   '/fill.html',
   '/gdpr.html',
   '/import.html',
+  '/404.html',
   '/css/style.css?v=7',
   '/js/crypto.js?v=7',
   '/js/p2p.js?v=7',
@@ -61,7 +62,7 @@ self.addEventListener('fetch', e => {
           return res;
         })
         .catch(() =>
-          caches.match(req).then(hit => hit || (isHtml ? caches.match('/index.html') : Response.error()))
+          caches.match(req).then(hit => hit || (isHtml ? caches.match('/404.html') : Response.error()))
         )
     );
     return;
