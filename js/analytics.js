@@ -1,3 +1,4 @@
+// © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE.
 // ProxForm — Google Analytics (GA4) loader.
 // Inert until you set GA_ID to your real Measurement ID.
 // Note: enabling GA introduces a third-party processor and cookies/identifiers.

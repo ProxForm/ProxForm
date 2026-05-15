@@ -1,0 +1,66 @@
+<!doctype html>
+<!-- © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Received submissions — ProxForm</title>
+  <meta name="description" content="Completed medical forms submitted by patients. Stored only on this device.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/icons/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css?v=7">
+  <script src="/js/theme.js?v=7" defer></script>
+  <script src="/js/netcheck.js?v=7" defer></script>
+  <script src="/js/storage.js?v=7" defer></script>
+  <script src="/js/render.js?v=7" defer></script>
+  <script src="/js/builder.js?v=7" defer></script>
+  <script src="/js/footer.js?v=7" defer></script>
+  <script src="/js/analytics.js?v=7" defer></script>
+</head>
+<body class="app-page received-page" data-page="received">
+  <header class="topbar">
+    <a class="brand" href="/">ProxForm</a>
+    <nav class="topnav" aria-label="Primary navigation">
+      <a href="/">Home</a>
+      <a href="/forms.html">My forms</a>
+      <a href="/received.html" class="active">Received</a>
+    </nav>
+    <div class="topbar-actions">
+      <span id="net-status" class="net-status net-checking" title="Checking outbound connectivity to STUN…">Checking…</span>
+      <span id="conn-status" class="conn-status">Not connected</span>
+      <a class="text-btn" href="/builder.html">Build a form</a>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <section class="step">
+      <div class="dash-head">
+        <h1>Received submissions</h1>
+      </div>
+      <p class="muted">Completed forms patients have sent back to you, newest first. Stored only on this device — close the browser data and they're gone.</p>
+
+      <div id="submissions-list" class="forms-list" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <p class="footer-tagline"><strong>Private by design.</strong> ProxForm is <em>GDPR-compliant by architecture</em> — answers travel browser-to-browser, end-to-end encrypted. Like a sheet of paper, not a database.</p>
+      <nav class="footer-nav">
+        <a href="/#how">How it works</a>
+        <a href="/gdpr.html">Why GDPR-proof</a>
+        <a href="/#faq">FAQ</a>
+        <button id="contact-btn" type="button" class="link-btn">Contact us</button>
+      </nav>
+      <p class="footer-attribution">
+        ProxForm by <a href="https://artivicolab.com" target="_blank" rel="noopener">Artivicolab</a>
+        · Auditable · No accounts · No PHI on any server
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

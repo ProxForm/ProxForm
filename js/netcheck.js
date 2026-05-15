@@ -1,3 +1,4 @@
+// © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE.
 // ProxForm — WebRTC connectivity probe.
 // WebRTC has no fixed inbound port; what can fail is outbound UDP to STUN and
 // NAT-mapped (srflx) candidate gathering. Without srflx, P2P won't traverse NAT.

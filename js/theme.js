@@ -1,3 +1,4 @@
+// © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE.
 (function () {
   const KEY = 'proxform_theme';
   const root = document.documentElement;

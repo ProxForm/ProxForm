@@ -1,3 +1,4 @@
+// © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE.
 // ProxForm — clinician form builder + session host.
 
 const FIELD_TYPES = {
@@ -11,7 +12,9 @@ const FIELD_TYPES = {
   yesno:    { label: 'Yes / No',       hasOptions: false }
 };
 
-const DRAFT_KEY = 'current';
+// Phase 2: forms are addressed by an id in the URL (?form=<id>).
+// No id → dashboard (list of forms). With id → editor for that form.
+let currentFormId = null;
 
 let fields = [];   // [{ id, type, label, required, options?, column? }]
 let nextId = 1;
@@ -208,16 +211,16 @@ async function initStorage() {
   }
 }
 
-async function restoreDraft() {
-  if (!storageOk) return;
-  let draft;
-  try { draft = await ProxStore.loadBuilderDraft(DRAFT_KEY); }
-  catch (_) { return; }
-  if (!draft) return;
-  document.getElementById('form-title').value = draft.title || '';
-  document.getElementById('form-desc').value  = draft.description || '';
-  fields = Array.isArray(draft.fields) ? draft.fields : [];
-  // Recompute nextId so new IDs don't collide with restored ones.
+// Loads a form by id from the dashboard library and applies it to the editor.
+// Returns false if the id can't be found (so the caller can redirect).
+async function loadForm(id) {
+  if (!storageOk) return false;
+  let record;
+  try { record = await ProxStore.getForm(id); } catch (_) { return false; }
+  if (!record) return false;
+  document.getElementById('form-title').value = record.title || '';
+  document.getElementById('form-desc').value  = record.description || '';
+  fields = Array.isArray(record.fields) ? record.fields : [];
   let max = 0;
   for (const f of fields) {
     const n = parseInt(String(f.id || '').replace(/^f/, ''), 10);
@@ -225,32 +228,33 @@ async function restoreDraft() {
   }
   nextId = max + 1;
   renderFields();
+  return true;
 }
 
 function snapshotDraft() {
   return {
-    title: document.getElementById('form-title').value,
+    title:       document.getElementById('form-title').value,
     description: document.getElementById('form-desc').value,
-    fields,
-    savedAt: Date.now()
+    fields
   };
 }
 
 async function persistDraft() {
-  if (!storageOk) return;
-  try { await ProxStore.saveBuilderDraft(DRAFT_KEY, snapshotDraft()); }
-  catch (_) {}
+  if (!storageOk || !currentFormId) return;
+  try { await ProxStore.saveForm(currentFormId, snapshotDraft()); } catch (_) {}
 }
 
+// "Clear draft" wipes the editor *contents* of the active form (title, desc,
+// fields) without deleting the form itself. To remove a form entirely, use the
+// Delete button on the dashboard.
 async function clearDraft() {
-  if (!storageOk) return;
-  try { await ProxStore.clearBuilderDraft(DRAFT_KEY); } catch (_) {}
   fields = [];
   nextId = 1;
   document.getElementById('form-title').value = '';
   document.getElementById('form-desc').value = '';
   renderFields();
-  toast('Draft cleared');
+  await persistDraft();
+  toast('Form cleared');
 }
 
 // ── Session host ──────────────────────────────────────────────────────────
@@ -335,6 +339,17 @@ function setupChannel(channel) {
       document.getElementById('btn-download').disabled = false;
       document.getElementById('btn-print').disabled = false;
       toast('Patient submitted the form');
+      // Persist on the clinician's own device so the submission survives a tab
+      // refresh and shows up in the dashboard. No network involvement.
+      if (storageOk) {
+        const snap = buildFormSnapshot();
+        ProxStore.saveSubmission({
+          formId:       currentFormId,
+          formTitle:    snap.title || 'Untitled form',
+          formSnapshot: snap,
+          answers
+        }).catch(() => { /* swallow — we still have the in-memory copy */ });
+      }
     }
   });
 
@@ -402,9 +417,274 @@ function slug(s) {
 // ── UI helpers ────────────────────────────────────────────────────────────
 
 function go(stepId) {
-  ['step-build', 'step-share', 'step-live'].forEach(id => {
-    document.getElementById(id).classList.toggle('hidden', id !== stepId);
+  ['step-dashboard', 'step-build', 'step-share', 'step-live', 'step-submission'].forEach(id => {
+    document.getElementById(id)?.classList.toggle('hidden', id !== stepId);
   });
+}
+
+// ── View a saved submission ──────────────────────────────────────────────
+
+function fmtAnswerDisplay(f, v) {
+  if (v == null || v === '' || (Array.isArray(v) && !v.length)) {
+    return '<span class="muted">—</span>';
+  }
+  if (Array.isArray(v)) return v.map(escapeHtml).join(', ');
+  if (f.type === 'yesno') return v === true || v === 'yes' ? 'Yes' : 'No';
+  return escapeHtml(String(v));
+}
+
+async function loadSubmissionView(id) {
+  if (!storageOk) return false;
+  const sub = await ProxStore.getSubmission(id);
+  if (!sub) return false;
+
+  document.getElementById('sub-title').textContent     = sub.formTitle || 'Submission';
+  document.getElementById('sub-id-badge').textContent  = '#' + shortId(sub.id);
+  document.getElementById('sub-received').textContent  = fmtDateTime(sub.receivedAt);
+
+  const root = document.getElementById('sub-view');
+  const fieldsArr = (sub.formSnapshot && sub.formSnapshot.fields) || [];
+  if (!fieldsArr.length) {
+    root.innerHTML = '<p class="empty">This submission has no form snapshot.</p>';
+  } else {
+    root.innerHTML = ProxRender.renderIntakeRows(fieldsArr, f => {
+      const half = f.column === 'half' ? 'half' : 'full';
+      const reqStar = f.required ? ' <span class="req">*</span>' : '';
+      return `
+        <div class="intake-cell ${half}">
+          <div class="intake-label">${escapeHtml(f.label)}${reqStar}</div>
+          <div class="intake-answer">${fmtAnswerDisplay(f, (sub.answers || {})[f.id])}</div>
+        </div>
+      `;
+    });
+  }
+
+  document.getElementById('btn-sub-export').onclick = () => {
+    const blob = new Blob([JSON.stringify(sub, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (slug(sub.formTitle) || 'submission') + '-' + shortId(sub.id) + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  document.getElementById('btn-sub-print').onclick = () => {
+    document.body.classList.add('printing-preview');
+    const restore = () => document.body.classList.remove('printing-preview');
+    window.addEventListener('afterprint', restore, { once: true });
+    window.print();
+    setTimeout(restore, 1500);
+  };
+  document.getElementById('btn-sub-delete').onclick = async () => {
+    if (!confirm('Delete this submission permanently?')) return;
+    try { await ProxStore.deleteSubmission(sub.id); } catch (_) {}
+    location.replace('/received.html');
+  };
+
+  return true;
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────
+
+function fmtDate(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function fieldCountSummary(fields) {
+  if (!Array.isArray(fields) || !fields.length) return 'Empty';
+  const inputs   = fields.filter(f => f.type !== 'section').length;
+  const sections = fields.length - inputs;
+  return `${inputs} question${inputs === 1 ? '' : 's'}` + (sections ? ` · ${sections} section${sections === 1 ? '' : 's'}` : '');
+}
+
+function fmtDateTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function shortId(id) {
+  if (!id) return '';
+  return id.replace(/^sub_/, '').replace(/-/g, '').slice(0, 8);
+}
+
+async function renderSubmissions() {
+  const root = document.getElementById('submissions-list');
+  if (!root) return;
+  let subs = [];
+  try { subs = await ProxStore.listSubmissions(); } catch (_) {}
+  if (!subs.length) {
+    root.innerHTML = `
+      <div class="empty-state">
+        <p>No submissions yet. When a patient submits a form to you, it will appear here.</p>
+      </div>`;
+    return;
+  }
+  root.innerHTML = subs.map(s => {
+    const fields = (s.formSnapshot && s.formSnapshot.fields) || [];
+    const answered = fields.filter(f => f.type !== 'section' && s.answers &&
+      s.answers[f.id] !== undefined && s.answers[f.id] !== '' &&
+      !(Array.isArray(s.answers[f.id]) && !s.answers[f.id].length)).length;
+    const total = fields.filter(f => f.type !== 'section').length;
+    return `
+      <div class="form-card submission-card" data-id="${escapeHtml(s.id)}">
+        <h3>${escapeHtml(s.formTitle || 'Untitled form')}</h3>
+        <div class="meta">${answered}/${total} answered · received ${fmtDateTime(s.receivedAt)}</div>
+        <div class="meta sub-id" title="Submission ID">#${escapeHtml(shortId(s.id))}</div>
+        <div class="row">
+          <a class="primary" href="/builder.html?submission=${encodeURIComponent(s.id)}">View</a>
+          <button class="secondary" data-sub-act="export" data-id="${escapeHtml(s.id)}" type="button">Export JSON</button>
+          <button class="secondary" data-sub-act="delete" data-id="${escapeHtml(s.id)}" type="button">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  root.querySelectorAll('button[data-sub-act]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id  = btn.dataset.id;
+      const act = btn.dataset.subAct;
+      if (act === 'delete') {
+        if (!confirm('Delete this submission permanently? The patient cannot resend it.')) return;
+        try { await ProxStore.deleteSubmission(id); } catch (_) {}
+        renderSubmissions();
+      } else if (act === 'export') {
+        const sub = await ProxStore.getSubmission(id);
+        if (!sub) return;
+        const blob = new Blob([JSON.stringify(sub, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = (slug(sub.formTitle) || 'submission') + '-' + shortId(sub.id) + '.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+    });
+  });
+}
+
+async function renderFormsList() {
+  const root = document.getElementById('forms-list');
+  if (!root) return;
+  let forms = [];
+  try { forms = await ProxStore.listForms(); } catch (_) {}
+  if (!forms.length) {
+    root.innerHTML = `
+      <div class="empty-state">
+        <p>No forms yet. Click <strong>＋ New form</strong> to create your first one.</p>
+      </div>`;
+    return;
+  }
+  root.innerHTML = forms.map(f => `
+    <div class="form-card" data-id="${escapeHtml(f.id)}">
+      <h3>${escapeHtml(f.title || 'Untitled form')}</h3>
+      <div class="meta">${fieldCountSummary(f.fields)} · updated ${fmtDate(f.updatedAt)}</div>
+      <div class="row">
+        <a class="primary" href="/builder.html?form=${encodeURIComponent(f.id)}">Open</a>
+        <button class="secondary" data-act="duplicate" data-id="${escapeHtml(f.id)}" type="button">Duplicate</button>
+        <button class="secondary" data-act="export"    data-id="${escapeHtml(f.id)}" type="button">Export</button>
+        <button class="secondary" data-act="delete"    data-id="${escapeHtml(f.id)}" type="button">Delete</button>
+      </div>
+    </div>
+  `).join('');
+
+  root.querySelectorAll('button[data-act]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id  = btn.dataset.id;
+      const act = btn.dataset.act;
+      if (act === 'delete') {
+        if (!confirm('Delete this form? This cannot be undone.')) return;
+        try { await ProxStore.deleteForm(id); } catch (_) {}
+        renderFormsList();
+      } else if (act === 'duplicate') {
+        const src = await ProxStore.getForm(id);
+        if (!src) return;
+        const copy = await ProxStore.createForm({
+          title:       (src.title || 'Untitled') + ' (copy)',
+          description: src.description || '',
+          fields:      JSON.parse(JSON.stringify(src.fields || []))
+        });
+        location.href = '/builder.html?form=' + encodeURIComponent(copy.id);
+      } else if (act === 'export') {
+        const src = await ProxStore.getForm(id);
+        if (!src) return;
+        const payload = {
+          title: src.title || '',
+          description: src.description || '',
+          fields: src.fields || []
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = (slug(src.title) || 'form') + '.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+    });
+  });
+}
+
+async function newFormAndOpen() {
+  const created = await ProxStore.createForm({ title: '', description: '', fields: [] });
+  location.href = '/builder.html?form=' + encodeURIComponent(created.id);
+}
+
+// ── Import ────────────────────────────────────────────────────────────────
+
+function openImportDialog() {
+  const dlg = document.getElementById('import-dialog');
+  document.getElementById('import-text').value = '';
+  document.getElementById('import-file').value = '';
+  document.getElementById('import-error').classList.add('hidden');
+  if (dlg.showModal) dlg.showModal();
+  else dlg.setAttribute('open', '');
+}
+
+function closeImportDialog() {
+  const dlg = document.getElementById('import-dialog');
+  if (dlg.close) dlg.close();
+  else dlg.removeAttribute('open');
+}
+
+function showImportError(msg) {
+  const el = document.getElementById('import-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+async function readPickedFile() {
+  const input = document.getElementById('import-file');
+  const file = input.files && input.files[0];
+  if (!file) return null;
+  return await file.text();
+}
+
+async function doImport() {
+  const errEl = document.getElementById('import-error');
+  errEl.classList.add('hidden');
+  let text = document.getElementById('import-text').value;
+  if (!text || !text.trim()) {
+    try { text = await readPickedFile() || ''; } catch (_) {}
+  }
+  if (!text || !text.trim()) {
+    showImportError('Paste a definition or pick a file first.');
+    return;
+  }
+  let parsed;
+  try { parsed = ProxImport.parseAuto(text); }
+  catch (e) { showImportError(e.message || String(e)); return; }
+  if (!storageOk) { showImportError('Storage unavailable — cannot save the imported form.'); return; }
+  try {
+    const created = await ProxStore.createForm({
+      title:       parsed.title || 'Imported form',
+      description: parsed.description || '',
+      fields:      parsed.fields || []
+    });
+    closeImportDialog();
+    location.href = '/builder.html?form=' + encodeURIComponent(created.id);
+  } catch (e) {
+    showImportError('Could not save the imported form: ' + (e.message || e));
+  }
 }
 
 function setStatus(text) {
@@ -422,15 +702,37 @@ function toast(msg) {
 // ── Wire up ───────────────────────────────────────────────────────────────
 
 window.addEventListener('DOMContentLoaded', async () => {
+  const page = document.body.dataset.page || 'builder';
+
+  ProxNet.checkAndDisplay('net-status');
+
+  await initStorage();
+  if (storageOk) {
+    try { await ProxStore.migrateLegacyDraftIfNeeded(); } catch (_) {}
+  }
+
+  if (page === 'forms') {
+    wireImportDialog();
+    document.getElementById('btn-new-form')?.addEventListener('click', newFormAndOpen);
+    await renderFormsList();
+    return;
+  }
+
+  if (page === 'received') {
+    await renderSubmissions();
+    return;
+  }
+
+  // page === 'builder' (builder.html)
   document.querySelectorAll('[data-add]').forEach(btn => {
     btn.addEventListener('click', () => addField(btn.dataset.add));
   });
-  document.getElementById('btn-generate').addEventListener('click', generateLink);
-  document.getElementById('btn-connect').addEventListener('click', connect);
-  document.getElementById('btn-download').addEventListener('click', downloadJson);
-  document.getElementById('btn-print').addEventListener('click', () => window.print());
-  document.getElementById('copy-url').addEventListener('click', () => copyFrom('invite-url'));
-  document.getElementById('copy-pass').addEventListener('click', () => copyFrom('invite-pass'));
+  document.getElementById('btn-generate')?.addEventListener('click', generateLink);
+  document.getElementById('btn-connect')?.addEventListener('click', connect);
+  document.getElementById('btn-download')?.addEventListener('click', downloadJson);
+  document.getElementById('btn-print')?.addEventListener('click', () => window.print());
+  document.getElementById('copy-url')?.addEventListener('click', () => copyFrom('invite-url'));
+  document.getElementById('copy-pass')?.addEventListener('click', () => copyFrom('invite-pass'));
   document.getElementById('btn-clear-draft')?.addEventListener('click', () => {
     if (confirm('Clear the current draft? This cannot be undone.')) clearDraft();
   });
@@ -442,18 +744,56 @@ window.addEventListener('DOMContentLoaded', async () => {
     setTimeout(restore, 1500);
   });
 
-  ProxNet.checkAndDisplay('net-status');
-
-  await initStorage();
   saveDraft = ProxStore.debounce(persistDraft, 400);
 
-  document.getElementById('form-title').addEventListener('input', () => { saveDraft(); renderPreview(); });
-  document.getElementById('form-desc').addEventListener('input',  () => { saveDraft(); renderPreview(); });
+  document.getElementById('form-title')?.addEventListener('input', () => { saveDraft(); renderPreview(); });
+  document.getElementById('form-desc')?.addEventListener('input',  () => { saveDraft(); renderPreview(); });
 
-  await restoreDraft();
-  if (!fields.length) renderFields();
-  renderPreview();
+  // Route based on the URL:
+  //   ?form=<id>       → editor
+  //   ?submission=<id> → submission detail view
+  //   neither          → bounce to the dashboard pages
+  const params = new URLSearchParams(location.search);
+  currentFormId = params.get('form');
+  const submissionId = params.get('submission');
+
+  if (submissionId) {
+    const ok = await loadSubmissionView(submissionId);
+    if (!ok) {
+      toast('That submission no longer exists');
+      location.replace('/received.html');
+      return;
+    }
+    go('step-submission');
+    return;
+  }
+
+  if (currentFormId) {
+    const ok = await loadForm(currentFormId);
+    if (!ok) {
+      toast('That form no longer exists');
+      location.replace('/forms.html');
+      return;
+    }
+    go('step-build');
+    if (!fields.length) renderFields();
+    renderPreview();
+  } else {
+    location.replace('/forms.html');
+  }
 });
+
+function wireImportDialog() {
+  document.getElementById('btn-import-form')?.addEventListener('click', openImportDialog);
+  document.getElementById('btn-import-do')?.addEventListener('click', doImport);
+  document.getElementById('btn-import-cancel')?.addEventListener('click', closeImportDialog);
+  document.getElementById('import-file')?.addEventListener('change', async () => {
+    try {
+      const text = await readPickedFile();
+      if (text) document.getElementById('import-text').value = text;
+    } catch (_) {}
+  });
+}
 
 function copyFrom(id) {
   const el = document.getElementById(id);

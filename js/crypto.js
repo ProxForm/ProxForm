@@ -1,3 +1,4 @@
+// © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE.
 // ProxForm crypto primitives — PBKDF2 → AES-GCM, with compression + base64url.
 // Lifted from btwinus. Same parameters (100k iters, 16-byte salt, 12-byte IV).
 

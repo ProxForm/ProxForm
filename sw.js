@@ -1,23 +1,29 @@
+// © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE.
 // ProxForm service worker — network-first for HTML/CSS/JS, cache-first for assets.
 
-const CACHE = 'proxform-v5';
+const CACHE = 'proxform-v7';
 
 const ASSETS = [
   '/',
   '/index.html',
   '/builder.html',
+  '/forms.html',
+  '/received.html',
   '/fill.html',
-  '/css/style.css?v=5',
-  '/js/crypto.js?v=5',
-  '/js/p2p.js?v=5',
-  '/js/builder.js?v=5',
-  '/js/fill.js?v=5',
-  '/js/theme.js?v=5',
-  '/js/storage.js?v=5',
-  '/js/netcheck.js?v=5',
-  '/js/render.js?v=5',
-  '/js/footer.js?v=5',
-  '/js/analytics.js?v=5',
+  '/gdpr.html',
+  '/css/style.css?v=7',
+  '/js/crypto.js?v=7',
+  '/js/p2p.js?v=7',
+  '/js/builder.js?v=7',
+  '/js/fill.js?v=7',
+  '/js/theme.js?v=7',
+  '/js/storage.js?v=7',
+  '/js/netcheck.js?v=7',
+  '/js/render.js?v=7',
+  '/js/import.js?v=7',
+  '/js/footer.js?v=7',
+  '/js/analytics.js?v=7',
+  '/js/bg.js?v=7',
   '/manifest.json',
   '/icons/favicon.svg'
 ];

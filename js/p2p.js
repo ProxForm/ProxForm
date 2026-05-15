@@ -1,3 +1,4 @@
+// © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE.
 // ProxForm P2P session — WebRTC offer/answer flow.
 // Depends on crypto.js (deriveKey, encryptText, decryptText, compress, decompress).
 

@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE. -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -6,7 +7,7 @@
   <title>GDPR-Proof Medical Forms — 100% Browser-Only, Peer-to-Peer | ProxForm</title>
   <meta name="description" content="GDPR-proof medical intake forms. 100% browser-only, end-to-end encrypted, peer-to-peer. Zero servers, zero database, zero PHI at rest. No DPA needed. Free, no account.">
   <meta name="keywords" content="GDPR medical form, GDPR-proof patient intake, GDPR-compliant questionnaire, encrypted medical form, peer-to-peer medical form, no-server patient form, end-to-end encrypted intake, browser-only medical form, GDPR clinician tool, zero data at rest medical">
-  <meta name="theme-color" content="#0a7f5f">
+  <meta name="theme-color" content="#e30613">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://proxform.com/">
 
@@ -22,10 +23,13 @@
 
   <link rel="icon" href="/icons/favicon.svg">
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/css/style.css?v=5">
-  <script src="/js/theme.js?v=5" defer></script>
-  <script src="/js/footer.js?v=5" defer></script>
-  <script src="/js/analytics.js?v=5" defer></script>
+  <link rel="stylesheet" href="/css/style.css?v=7">
+  <script src="/js/theme.js?v=7" defer></script>
+  <script src="/js/netcheck.js?v=7" defer></script>
+  <script src="/js/bg.js?v=7" defer></script>
+  <script src="/js/footer.js?v=7" defer></script>
+  <script src="/js/analytics.js?v=7" defer></script>
+  <script defer>window.addEventListener('DOMContentLoaded', () => ProxNet.checkAndDisplay('net-status'));</script>
 
   <script type="application/ld+json">
   {
@@ -72,7 +76,7 @@
         "name": "Where is patient data stored?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Nowhere by default. Answers exist only in the two open browser tabs during the session. The clinician can choose to save a local copy (JSON or printed PDF) on their own device — that copy is then their responsibility under their own legal basis."
+          "text": "Patient data is never sent to any ProxForm server — there is no server. During a session it travels directly browser-to-browser over an end-to-end encrypted WebRTC channel. After submission it is stored only on the clinician's own device (in their browser's local IndexedDB), where the clinician acts as data controller — exactly like keeping a paper file in their own cabinet."
         }
       },
       {
@@ -104,9 +108,17 @@
   </script>
 </head>
 <body class="home-page">
+  <div class="bg-mirror" aria-hidden="true"></div>
   <header class="topbar">
     <a class="brand" href="/">ProxForm</a>
+    <nav class="topnav" aria-label="Primary navigation">
+      <a href="/" class="active">Home</a>
+      <a href="/forms.html">My forms</a>
+      <a href="/received.html">Received</a>
+    </nav>
     <div class="topbar-actions">
+      <span id="net-status" class="net-status net-checking" title="Checking outbound connectivity to STUN…">Checking…</span>
+      <span id="conn-status" class="conn-status">Not connected</span>
       <a class="text-btn" href="/builder.html">Build a form</a>
       <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
     </div>
@@ -116,12 +128,12 @@
     <section class="hero">
       <div class="gdpr-badge" aria-label="GDPR-proof by design">
         <span class="gdpr-badge-mark">GDPR</span>
-        <span class="gdpr-badge-text">100% Browser-Only · Zero PHI at Rest · Zero Servers</span>
+        <span class="gdpr-badge-text">100% Browser-Only · Zero Servers · Zero Third-Party Processors</span>
       </div>
       <h1>The <em>GDPR-proof</em> way to send a medical form.</h1>
       <p class="lede">Patient intake with <strong>nothing to breach</strong>. No server. No database. No third-party processor. Answers travel directly browser-to-browser over an end-to-end encrypted, peer-to-peer channel — and vanish when you close the tab.</p>
       <div class="hero-cta">
-        <a class="primary big" href="/builder.html">Build a form — free →</a>
+        <a class="primary big" href="/builder.html">Build a form — free <span class="arrow">→</span></a>
       </div>
       <p class="micro">No account. No DPA needed. Works in any modern browser.</p>
     </section>
@@ -136,8 +148,8 @@
         </div>
         <div class="pillar">
           <div class="pillar-num">0</div>
-          <div class="pillar-label">PHI at rest</div>
-          <p>Patient data exists only in the two browser tabs during the session. Close the tab, it's gone.</p>
+          <div class="pillar-label">PHI on our servers</div>
+          <p>We have no servers, so we can't hold patient data. Submissions live only on the clinician's own device — like a paper file in their cabinet.</p>
         </div>
         <div class="pillar">
           <div class="pillar-num">0</div>
@@ -168,6 +180,33 @@
           <p>Their browser connects directly to yours. Answers appear in your tab live as they type. Save locally if you want a copy.</p>
         </li>
       </ol>
+    </section>
+
+    <section id="who" class="who">
+      <h2>Built for medical — useful anywhere intake stays private</h2>
+      <p class="why-lede">The same zero-data-at-rest architecture earns its keep in any industry where the question isn't "can we trust your servers?" but "do you even have any?"</p>
+      <div class="who-grid">
+        <div class="who-card">
+          <div class="who-tag">Medical &amp; Clinical</div>
+          <p>Patient intake, pre-appointment questionnaires, telehealth screening, in-clinic consent forms — the original use case.</p>
+        </div>
+        <div class="who-card">
+          <div class="who-tag">Legal, Notary &amp; Government</div>
+          <p>Law-firm client intake, on-site notary identity verification, municipal license and zoning applications — sensitive personal data without a cloud-storage paper trail.</p>
+        </div>
+        <div class="who-card">
+          <div class="who-tag">Hospitality &amp; Luxury Retail</div>
+          <p>Boutique hotel check-in, luxury auto test-drive paperwork, VIP event and gala registration — passport scans and signatures straight to the desk browser, no third party in between.</p>
+        </div>
+        <div class="who-card">
+          <div class="who-tag">HR &amp; Secure Corporate</div>
+          <p>On-site interview NDAs and background-check consent, visitor logs at defense and biotech facilities, contractor liability waivers — data that never touches the public internet.</p>
+        </div>
+        <div class="who-card">
+          <div class="who-tag">Wellness, Fitness &amp; Personal Care</div>
+          <p>Tattoo and piercing medical histories, spa and aesthetics consent forms, climbing-gym and MMA injury waivers — high-liability paperwork archived locally on the studio's own device.</p>
+        </div>
+      </div>
     </section>
 
     <section id="why" class="why">
@@ -214,7 +253,7 @@
     <section class="cta">
       <h2>Try it now</h2>
       <p>Open two browser windows, build a form in one, open the link in the other.</p>
-      <a class="primary big" href="/builder.html">Build a form — free →</a>
+      <a class="primary big" href="/builder.html">Build a form — free <span class="arrow">→</span></a>
     </section>
   </main>
 
@@ -223,13 +262,13 @@
       <p class="footer-tagline"><strong>Private by design.</strong> ProxForm is <em>GDPR-compliant by architecture</em> — your patient's answers travel browser-to-browser, end-to-end encrypted. Like a sheet of paper, not a database.</p>
       <nav class="footer-nav">
         <a href="/#how">How it works</a>
-        <a href="/#why">Why GDPR-proof</a>
+        <a href="/gdpr.html">Why GDPR-proof</a>
         <a href="/#faq">FAQ</a>
         <button id="contact-btn" type="button" class="link-btn">Contact us</button>
       </nav>
       <p class="footer-attribution">
         ProxForm by <a href="https://artivicolab.com" target="_blank" rel="noopener">Artivicolab</a>
-        · Auditable · No accounts · No PHI at rest
+        · Auditable · No accounts · No PHI on any server
       </p>
     </div>
   </footer>

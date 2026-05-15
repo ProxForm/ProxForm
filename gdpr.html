@@ -1,0 +1,176 @@
+<!doctype html>
+<!-- © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How ProxForm is GDPR-proof — full claims & technical detail | ProxForm</title>
+  <meta name="description" content="Every GDPR-proof claim ProxForm makes, in one place — architecture, cryptography, storage scope, processor relationships, GDPR article mapping.">
+  <meta name="theme-color" content="#e30613">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://proxform.com/gdpr.html">
+
+  <link rel="icon" href="/icons/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css?v=7">
+  <script src="/js/theme.js?v=7" defer></script>
+  <script src="/js/netcheck.js?v=7" defer></script>
+  <script src="/js/bg.js?v=7" defer></script>
+  <script src="/js/footer.js?v=7" defer></script>
+  <script src="/js/analytics.js?v=7" defer></script>
+  <script defer>window.addEventListener('DOMContentLoaded', () => ProxNet.checkAndDisplay('net-status'));</script>
+</head>
+<body class="home-page">
+  <div class="bg-mirror" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="/">ProxForm</a>
+    <nav class="topnav" aria-label="Primary navigation">
+      <a href="/">Home</a>
+      <a href="/forms.html">My forms</a>
+      <a href="/received.html">Received</a>
+    </nav>
+    <div class="topbar-actions">
+      <span id="net-status" class="net-status net-checking" title="Checking outbound connectivity to STUN…">Checking…</span>
+      <span id="conn-status" class="conn-status">Not connected</span>
+      <a class="text-btn" href="/builder.html">Build a form</a>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="gdpr-badge" aria-label="GDPR-proof by design">
+        <span class="gdpr-badge-mark">GDPR</span>
+        <span class="gdpr-badge-text">Every claim, in one place</span>
+      </div>
+      <h1>How ProxForm is <em>GDPR-proof</em></h1>
+      <p class="lede">A complete reference of every privacy and security claim ProxForm makes — what we do, what we don't do, and the technical detail behind each one. If you're doing a data-protection assessment, start here.</p>
+    </section>
+
+    <section class="gdpr-pillars">
+      <h2 class="visually-hidden">The four pillars</h2>
+      <div class="pillar-grid">
+        <div class="pillar">
+          <div class="pillar-num">0</div>
+          <div class="pillar-label">Servers</div>
+          <p>ProxForm has no application server. There is no backend to log into, no database, no queue, no API.</p>
+        </div>
+        <div class="pillar">
+          <div class="pillar-num">0</div>
+          <div class="pillar-label">PHI at rest</div>
+          <p>Because there is no server, no patient health information is ever stored on ProxForm infrastructure. Local copies live only on the clinician's own device.</p>
+        </div>
+        <div class="pillar">
+          <div class="pillar-num">0</div>
+          <div class="pillar-label">Third-party processors</div>
+          <p>No analytics, no email backend, no payment processor, no error-tracking SaaS. Patient data never touches a third party.</p>
+        </div>
+        <div class="pillar">
+          <div class="pillar-num">100<span class="pct">%</span></div>
+          <div class="pillar-label">In your browser</div>
+          <p>The whole app is HTML, CSS, and JavaScript served as static files. Every line of code runs in your browser — auditable in DevTools.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="why">
+      <h2>Architecture guarantees</h2>
+      <p class="why-lede">These are the structural properties of ProxForm. They hold by construction, not by policy — there is no setting you can toggle to break them.</p>
+      <ul class="why-list">
+        <li><strong>No data at rest on our infrastructure.</strong> Nothing patient-related is stored on any ProxForm server, because there is no ProxForm server. <span class="muted">Article 32 risk assessment: trivial.</span></li>
+        <li><strong>No controller-side storage by default.</strong> If the clinician chooses to save a copy locally, that local copy is their responsibility under their own legal basis — like a paper file in their cabinet.</li>
+        <li><strong>No processor relationship.</strong> ProxForm never receives patient data, so there is no controller→processor flow to formalize. <span class="muted">No DPA needed under Article 28.</span></li>
+        <li><strong>No third-party processors involved.</strong> No analytics provider, no email relay, no logging service, no CDN that sees patient data. <span class="muted">No Article 30 record-of-processing for transit.</span></li>
+        <li><strong>End-to-end encryption.</strong> The handshake metadata is encrypted with AES-256-GCM using a key derived from the shared passphrase. The data channel itself runs over DTLS 1.3.</li>
+        <li><strong>Two-channel out-of-band sharing.</strong> The invitation link travels through one channel (email), the passphrase through a different channel (SMS, phone). Compromising one channel is not enough to read the form.</li>
+        <li><strong>Session verification (SAS).</strong> Both sides see a short verification code derived from session nonces. Reading it aloud defeats a person-in-the-middle who somehow obtained both channels.</li>
+        <li><strong>No accounts.</strong> No registration, no login, no identifier ProxForm could associate with a clinician or patient.</li>
+        <li><strong>No cookies.</strong> ProxForm sets zero cookies.</li>
+        <li><strong>No tracking, no analytics.</strong> The analytics module ships inert and is disabled by default. Enabling it would introduce a third-party processor and require a consent banner.</li>
+        <li><strong>Auditable.</strong> Every line of crypto and protocol code runs in your browser. Open DevTools, inspect it, verify it. No obfuscation, no minification of the security-critical code.</li>
+        <li><strong>No hidden network traffic.</strong> The only outbound network call ProxForm makes is the WebRTC STUN probe to gather a NAT-reflexive candidate. No telemetry, no error reports, no usage pings.</li>
+      </ul>
+    </section>
+
+    <section class="why">
+      <h2>Cryptography &amp; transport detail</h2>
+      <ul class="why-list">
+        <li><strong>Key derivation.</strong> PBKDF2 with SHA-256, 100,000 iterations, derives a 256-bit key from the shared passphrase. A fresh random salt is generated per session.</li>
+        <li><strong>Handshake encryption.</strong> AES-256-GCM with a fresh 96-bit IV encrypts the SDP offer and answer carried in the URL fragment. The fragment never leaves the browser to a server — it's only visible to the two peers.</li>
+        <li><strong>Compression.</strong> Payloads are compressed before encryption to reduce link size — compression is for length, not for confidentiality.</li>
+        <li><strong>Data-channel transport.</strong> WebRTC data channel over DTLS 1.3 (browser default), with SCTP framing. Both peers verify each other's DTLS fingerprints, which are themselves authenticated via the encrypted SDP exchange.</li>
+        <li><strong>Session verification (SAS).</strong> Each side generates a random nonce, exchanges it in the first data-channel message, then hashes both nonces together. The short hex code displayed on both screens must match — if they don't, abort.</li>
+        <li><strong>No long-term keys.</strong> Every session uses a fresh passphrase, fresh salt, fresh IVs, fresh nonces. Nothing is reused across sessions.</li>
+      </ul>
+    </section>
+
+    <section class="why">
+      <h2>Local-device storage scope</h2>
+      <p class="why-lede">ProxForm uses browser storage only on the user's own device, never on any server.</p>
+      <ul class="why-list">
+        <li><strong>IndexedDB on the clinician's device.</strong> Form definitions (drafts and saved forms) and received submissions live in IndexedDB scoped to the clinician's browser. Clearing browser data removes them.</li>
+        <li><strong>IndexedDB on the patient's device.</strong> A partially-filled answer set is saved as a draft so the patient can refresh without losing input. The draft is cleared automatically on successful submission.</li>
+        <li><strong>localStorage.</strong> One key only: <code>proxform_theme</code> for the light/dark preference. No patient data, no tracking IDs.</li>
+        <li><strong>No cross-origin storage.</strong> Browser storage is sandboxed to the ProxForm origin — no other site can read it.</li>
+        <li><strong>Persistence request.</strong> ProxForm asks the browser to mark its storage as persistent so drafts aren't evicted under disk pressure. The browser may grant or deny this; either way, nothing leaves the device.</li>
+      </ul>
+    </section>
+
+    <section class="why">
+      <h2>What ProxForm does <em>not</em> do</h2>
+      <ul class="why-list">
+        <li><strong>No upload of patient data anywhere.</strong> Answers are not POSTed to any backend — there is no backend to POST to.</li>
+        <li><strong>No email integration.</strong> ProxForm cannot email a completed form on the clinician's behalf. That would require a server-side SMTP relay, which we do not run.</li>
+        <li><strong>No cloud sync.</strong> Forms and submissions do not sync across devices through ProxForm. Export the JSON yourself if you need a portable copy.</li>
+        <li><strong>No accounts, no SSO.</strong> No identity provider is involved.</li>
+        <li><strong>No analytics, no telemetry.</strong> No Google Analytics, no Sentry, no PostHog, no first-party pixel. The analytics file ships disabled.</li>
+        <li><strong>No third-party fonts or scripts.</strong> No Google Fonts, no CDN-hosted JavaScript. Everything is served from the ProxForm origin.</li>
+        <li><strong>No CAPTCHA.</strong> No reCAPTCHA or hCaptcha — those load third-party JavaScript and collect signals.</li>
+      </ul>
+    </section>
+
+    <section class="why">
+      <h2>GDPR article mapping</h2>
+      <ul class="why-list">
+        <li><strong>Article 5 (Principles).</strong> Data minimisation is enforced by architecture — only the fields the clinician adds are collected, and no copy is retained by ProxForm.</li>
+        <li><strong>Article 25 (Data protection by design and by default).</strong> Privacy is the default and the only mode. There is no "less private" setting.</li>
+        <li><strong>Article 28 (Processor).</strong> No processor relationship exists between the clinician and ProxForm — no DPA required.</li>
+        <li><strong>Article 30 (Records of processing).</strong> No third-party processors to enumerate for transit. The clinician's local storage of received submissions is their own controller record, kept under their own existing processes.</li>
+        <li><strong>Article 32 (Security of processing).</strong> Encryption in transit (AES-256-GCM + DTLS 1.3), no data at rest on third-party systems, session integrity verification (SAS), no shared infrastructure to compromise.</li>
+        <li><strong>Article 33–34 (Breach notification).</strong> ProxForm has nothing to breach — no servers, no databases, no logs containing patient data. A breach of ProxForm infrastructure cannot expose patient submissions.</li>
+        <li><strong>Articles 44–49 (International transfers).</strong> Patient data does not transfer across any border via ProxForm — it travels directly between two browsers chosen by the participants.</li>
+      </ul>
+    </section>
+
+    <section class="why">
+      <h2>What ProxForm is <em>not</em></h2>
+      <ul class="why-list">
+        <li><strong>Not a HIPAA-marketed solution.</strong> The same zero-data-at-rest architecture is favourable under HIPAA, but we do not market ProxForm as a HIPAA-compliant product. HIPAA has its own requirements (BAAs, audit logs) that are out of scope for v1.</li>
+        <li><strong>Not a long-term storage system.</strong> Submissions live on the clinician's own device. Exporting to JSON (or printing to PDF) is the supported way to keep a durable record under the clinician's own retention policy.</li>
+        <li><strong>Not a substitute for legal advice.</strong> ProxForm removes most of the technical risk surface, but you remain the data controller for whatever you collect and keep. Check with your DPO.</li>
+      </ul>
+    </section>
+
+    <section class="cta">
+      <h2>Questions about a specific obligation?</h2>
+      <p>If your DPO needs a written statement about something not covered here, reach out — use the Contact button in the footer below.</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <p class="footer-tagline"><strong>Private by design.</strong> ProxForm is <em>GDPR-compliant by architecture</em> — your patient's answers travel browser-to-browser, end-to-end encrypted. Like a sheet of paper, not a database.</p>
+      <nav class="footer-nav">
+        <a href="/#how">How it works</a>
+        <a href="/gdpr.html">Why GDPR-proof</a>
+        <a href="/#faq">FAQ</a>
+        <button id="contact-btn" type="button" class="link-btn">Contact us</button>
+      </nav>
+      <p class="footer-attribution">
+        ProxForm by <a href="https://artivicolab.com" target="_blank" rel="noopener">Artivicolab</a>
+        · Auditable · No accounts · No PHI on any server
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

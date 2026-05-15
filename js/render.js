@@ -1,3 +1,4 @@
+// © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE.
 // ProxForm — shared form renderer.
 // Used by fill.html (live, interactive) and builder.html (preview, disabled).
 

@@ -1,3 +1,4 @@
+// © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE.
 // ProxForm — footer behaviors. Contact email is built at click time so it
 // never appears in page source for naive scrapers.
 

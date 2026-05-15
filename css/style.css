@@ -1,32 +1,41 @@
+/* © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE. */
 /* ProxForm — base styles. Light + dark via [data-theme]. */
 
 :root {
-  --bg: #f8faf9;
+  --bg: #fff8e7;
   --surface: #ffffff;
-  --surface-2: #f1f5f3;
-  --border: #dde5e1;
-  --text: #15201c;
-  --muted: #5a6c66;
-  --primary: #0a7f5f;
+  --surface-2: #fff1c4;
+  --border: #1a1a1a;
+  --text: #0f0f0f;
+  --muted: #5a5040;
+  --primary: #e30613;
   --primary-ink: #ffffff;
-  --primary-hover: #086a4f;
-  --danger: #b03030;
-  --shadow: 0 1px 2px rgba(20, 40, 30, 0.04), 0 2px 8px rgba(20, 40, 30, 0.06);
-  --radius: 10px;
+  --primary-hover: #b8040f;
+  --primary-dark: #8a0309;
+  --primary-light: #ff2d3a;
+  --accent: #fcd116;
+  --stitch: #fcd116;
+  --danger: #8a0309;
+  --shadow: 2px 2px 0 rgba(15, 15, 15, 0.95);
+  --radius: 6px;
 }
 
 html[data-theme="dark"] {
-  --bg: #0e1614;
-  --surface: #16201d;
-  --surface-2: #1d2825;
-  --border: #2a3733;
-  --text: #e8efec;
-  --muted: #95a59f;
-  --primary: #34c896;
-  --primary-ink: #06120e;
-  --primary-hover: #4ad6a6;
+  --bg: #14110a;
+  --surface: #1f1a10;
+  --surface-2: #2a221a;
+  --border: #fcd116;
+  --text: #fff8e1;
+  --muted: #b8a878;
+  --primary: #ff2d3a;
+  --primary-ink: #14110a;
+  --primary-hover: #ff5060;
+  --primary-dark: #c00010;
+  --primary-light: #ff6470;
+  --accent: #fcd116;
+  --stitch: #fcd116;
   --danger: #ff8585;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow: 2px 2px 0 rgba(252, 209, 22, 0.4);
 }
 
 * { box-sizing: border-box; }
@@ -75,6 +84,24 @@ p { margin: 0 0 1em; }
 .brand:hover { text-decoration: none; }
 
 .topbar-actions { display: flex; align-items: center; gap: 0.75rem; }
+
+.topnav {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-left: 1.25rem; flex: 1;
+}
+.topnav a {
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 500;
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+}
+.topnav a:hover { background: var(--surface-2); text-decoration: none; color: var(--primary); }
+.topnav a:target,
+.topnav a.active { color: var(--primary); }
+@media (max-width: 640px) {
+  .topnav { display: none; }
+}
 
 .conn-status {
   font-size: 0.85rem;
@@ -132,17 +159,78 @@ button, a.primary, a.secondary {
   cursor: pointer;
 }
 
+/* Pop-art button: flat red, thick black ink border, hard-offset comic shadow.
+   Halftone dots scatter across the surface; yellow accent line just inside. */
 .primary {
-  background: var(--primary);
+  position: relative;
+  background-color: var(--primary);
+  background-image:
+    radial-gradient(circle, rgba(0, 0, 0, 0.18) 1.1px, transparent 1.4px);
+  background-size: 8px 8px;
   color: var(--primary-ink);
-  border: none;
-  border-radius: 8px;
+  border: 2.5px solid #0f0f0f;
+  border-radius: var(--radius);
   padding: 0.7rem 1.2rem;
-  font-weight: 600;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   display: inline-block;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55);
+  box-shadow: 3px 3px 0 #0f0f0f;
+  transition: transform 80ms ease, box-shadow 80ms ease, background-color 120ms ease;
 }
-.primary:hover { background: var(--primary-hover); text-decoration: none; }
-.primary:disabled { opacity: 0.5; cursor: default; }
+/* Yellow comic-accent line just inside the ink border. */
+.primary::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border: 1.5px solid var(--accent);
+  border-radius: calc(var(--radius) - 2px);
+  pointer-events: none;
+}
+.primary:hover {
+  background-color: var(--primary-hover);
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 #0f0f0f;
+  text-decoration: none;
+}
+.primary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #0f0f0f;
+}
+.primary:disabled {
+  opacity: 0.55;
+  cursor: default;
+  box-shadow: 2px 2px 0 #0f0f0f;
+  transform: none;
+}
+.primary:disabled::after { opacity: 0.3; }
+html[data-theme="dark"] .primary {
+  border-color: var(--accent);
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.7);
+  box-shadow: 3px 3px 0 var(--accent);
+}
+html[data-theme="dark"] .primary:hover  { box-shadow: 4px 4px 0 var(--accent); }
+html[data-theme="dark"] .primary:active { box-shadow: 1px 1px 0 var(--accent); }
+html[data-theme="dark"] .primary:disabled { box-shadow: 2px 2px 0 var(--accent); }
+
+/* Animated arrow inside primary buttons — nudges right continuously, speeds
+   up on hover. */
+@keyframes pf-arrow-nudge {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(5px); }
+}
+.primary .arrow {
+  display: inline-block;
+  margin-left: 0.25em;
+  animation: pf-arrow-nudge 1.4s ease-in-out infinite;
+  will-change: transform;
+}
+.primary:hover .arrow { animation-duration: 0.6s; }
+.primary:disabled .arrow { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .primary .arrow { animation: none; }
+}
 
 .secondary {
   background: var(--surface-2);
@@ -234,7 +322,7 @@ input[type="text"], input[type="number"], input[type="date"], textarea {
 input:focus, textarea:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(10, 127, 95, 0.15);
+  box-shadow: 0 0 0 3px rgba(227, 6, 19, 0.25);
 }
 textarea { resize: vertical; }
 
@@ -247,6 +335,112 @@ textarea { resize: vertical; }
   gap: 0.5rem;
 }
 .copy-row input { flex: 1; }
+
+/* ── Dashboard (forms library + received submissions) ──────────────── */
+
+.dash-section-title {
+  margin: 1.75rem 0 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  scroll-margin-top: 4.5rem;   /* keeps the heading clear of the sticky topbar when jumped to */
+}
+html { scroll-behavior: smooth; }
+.muted.small { font-size: 0.85rem; margin: 0 0 0.4rem; }
+
+.submission-card { border-left: 3px solid var(--primary); }
+.submission-card .sub-id {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.1rem;
+}
+
+
+.dash-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem;
+}
+.dash-head h1 { margin: 0; }
+.dash-head-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.forms-list {
+  display: grid; gap: 0.85rem; margin-top: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.form-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 0.35rem;
+}
+.form-card h3 { margin: 0; font-size: 1.05rem; }
+.form-card .meta { font-size: 0.82rem; color: var(--muted); }
+.form-card .row { display: flex; gap: 0.4rem; margin-top: 0.55rem; flex-wrap: wrap; }
+.form-card .row .primary,
+.form-card .row .secondary { padding: 0.35rem 0.75rem; font-size: 0.85rem; }
+
+.empty-state {
+  padding: 2rem; text-align: center; color: var(--muted);
+  border: 1px dashed var(--border); border-radius: var(--radius);
+}
+
+.back-link {
+  display: inline-block; color: var(--muted); font-size: 0.88rem;
+  margin-bottom: 0.5rem;
+}
+.back-link:hover { color: var(--primary); text-decoration: none; }
+
+/* ── Import dialog ──────────────────────────────────────────────────── */
+
+.dialog {
+  width: min(720px, 92vw);
+  max-height: 90vh;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  padding: 1.25rem 1.4rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+}
+.dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+.dialog h2 { margin: 0 0 0.25rem; }
+.dialog .file-row { display: flex; flex-direction: column; gap: 0.35rem; }
+.dialog .file-row input[type="file"] { padding: 0.4rem 0; border: none; background: transparent; }
+.dialog textarea { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.88rem; }
+.dialog .actions { margin-top: 1rem; }
+
+.import-help {
+  margin: 0.5rem 0 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-2);
+}
+.import-help summary { cursor: pointer; font-weight: 500; padding: 0.2rem 0; }
+.import-help pre {
+  margin: 0.5rem 0;
+  padding: 0.7rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.import-help .small { font-size: 0.82rem; margin: 0.25rem 0 0; }
+.import-help code {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+}
 
 /* ── Form builder ───────────────────────────────────────────────────── */
 
@@ -312,12 +506,15 @@ textarea { resize: vertical; }
 .preview-form input:disabled,
 .preview-form textarea:disabled { opacity: 1; color: var(--text); }
 
-/* Paper-clean intake look — both on screen (preview) and on print. */
-.preview-form, .printing-preview .patient-form {
+/* Paper-clean intake look — both on screen (preview) and on print.
+   Specificity bumped (.patient-form.preview-form) so it beats the base
+   .patient-form rule that comes later in the file. */
+.patient-form.preview-form, .printing-preview .patient-form {
   background: #ffffff;
   color: #15201c;
   border-radius: 0;
   border-color: #555;
+  box-shadow: none;
 }
 .preview-form .intake-section,
 .printing-preview .intake-section {
@@ -537,6 +734,65 @@ textarea { resize: vertical; }
 
 /* ── Home page ─────────────────────────────────────────────────────── */
 
+/* Home page background:
+   - ::before is a fixed grid of squares, parallaxed via --bg-shift (set by bg.js
+     at 0.35× scroll speed) so it drifts slower than the content.
+   - ::after is a fixed soft spotlight that brightens the center so foreground
+     text stays readable while the grid remains visible at the edges. */
+body.home-page {
+  background-color: var(--bg);
+  isolation: isolate;
+}
+/* Pop-art halftone dots. Parallaxed via --bg-shift so they drift slower
+   than the page. */
+body.home-page::before {
+  content: "";
+  position: fixed;
+  inset: -4px;
+  z-index: -2;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(15, 15, 15, 0.09) 1.4px, transparent 1.9px);
+  background-size: 14px 14px;
+  background-position: 0 calc(var(--bg-shift, 0px) * -1);
+  will-change: background-position;
+}
+html[data-theme="dark"] body.home-page::before {
+  background-image:
+    radial-gradient(circle, rgba(252, 209, 22, 0.08) 1.4px, transparent 1.9px);
+}
+
+/* Mirror layer — sits between the halftone dots and the content. A diagonal
+   sheen reads like glass catching light; the radial wash brightens the center
+   so the foreground text stays the focus. */
+.bg-mirror {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg,
+      rgba(252, 209, 22, 0.20) 0%,
+      rgba(255, 255, 255, 0.08) 35%,
+      rgba(255, 255, 255, 0.04) 65%,
+      rgba(252, 209, 22, 0.18) 100%),
+    radial-gradient(ellipse 70% 65% at 50% 45%,
+      rgba(255, 248, 231, 0.65) 0%,
+      rgba(255, 248, 231, 0.22) 50%,
+      rgba(255, 248, 231, 0.00) 85%);
+}
+html[data-theme="dark"] .bg-mirror {
+  background:
+    linear-gradient(135deg,
+      rgba(252, 209, 22, 0.12) 0%,
+      rgba(255, 255, 255, 0.02) 35%,
+      rgba(255, 255, 255, 0.01) 65%,
+      rgba(252, 209, 22, 0.10) 100%),
+    radial-gradient(ellipse 70% 65% at 50% 45%,
+      rgba(20, 17, 10, 0.65) 0%,
+      rgba(20, 17, 10, 0.22) 50%,
+      rgba(20, 17, 10, 0.00) 85%);
+}
 body.home-page main {
   max-width: 980px;
   margin: 0 auto;
@@ -550,14 +806,23 @@ body.home-page main {
 }
 
 .hero {
-  padding: 3.5rem 0 2rem;
+  padding: 4rem 0 2.5rem;
   text-align: center;
+  position: relative;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: -2rem 10% auto 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--primary-light) 50%, transparent 100%);
+  opacity: 0.4;
 }
 .gdpr-badge {
   display: inline-flex; align-items: center; gap: 0.6rem;
   padding: 0.4rem 0.7rem 0.4rem 0.4rem;
   border: 1px solid var(--primary);
-  background: rgba(10, 127, 95, 0.08);
+  background: rgba(227, 6, 19, 0.10);
   color: var(--primary);
   border-radius: 999px;
   font-size: 0.85rem;
@@ -593,11 +858,27 @@ body.home-page main {
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
 .pillar {
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1.1rem 1rem 1rem;
+  padding: 1.25rem 1rem 1rem;
   text-align: center;
+  box-shadow: var(--shadow);
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+.pillar::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 1rem; right: 1rem;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-light), var(--primary), var(--primary-dark));
+  border-radius: 0 0 3px 3px;
+}
+.pillar:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary-light);
+  box-shadow: 0 4px 14px rgba(20, 30, 60, 0.10);
 }
 .pillar-num {
   font-size: clamp(2.4rem, 5vw, 3.2rem);
@@ -613,9 +894,39 @@ body.home-page main {
 }
 .pillar p { font-size: 0.9rem; color: var(--muted); margin: 0; }
 
-.how, .why, .cta, .faq {
+.how, .who, .why, .cta, .faq {
   padding: 2.5rem 0;
   border-top: 1px solid var(--border);
+}
+.who-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  margin-top: 1.25rem;
+}
+.who-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  box-shadow: 3px 3px 0 var(--border);
+}
+.who-tag {
+  display: inline-block;
+  background: var(--accent);
+  color: #0f0f0f;
+  border: 1.5px solid #0f0f0f;
+  border-radius: 999px;
+  padding: 0.15rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.6rem;
+}
+.who-card p { margin: 0; font-size: 0.94rem; color: var(--text); }
+html[data-theme="dark"] .who-card {
+  box-shadow: 3px 3px 0 var(--accent);
 }
 .muted-h2 { color: var(--muted); font-weight: 400; font-size: 0.7em; }
 .why-lede { font-size: 1.05rem; max-width: 700px; margin-bottom: 1.25rem; }

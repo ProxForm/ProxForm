@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE. -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -8,23 +9,30 @@
   <meta name="robots" content="noindex">
   <link rel="icon" href="/icons/favicon.svg">
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/css/style.css?v=5">
-  <script src="/js/theme.js?v=5" defer></script>
-  <script src="/js/storage.js?v=5" defer></script>
-  <script src="/js/netcheck.js?v=5" defer></script>
-  <script src="/js/crypto.js?v=5" defer></script>
-  <script src="/js/p2p.js?v=5" defer></script>
-  <script src="/js/render.js?v=5" defer></script>
-  <script src="/js/builder.js?v=5" defer></script>
-  <script src="/js/footer.js?v=5" defer></script>
-  <script src="/js/analytics.js?v=5" defer></script>
+  <link rel="stylesheet" href="/css/style.css?v=7">
+  <script src="/js/theme.js?v=7" defer></script>
+  <script src="/js/storage.js?v=7" defer></script>
+  <script src="/js/netcheck.js?v=7" defer></script>
+  <script src="/js/crypto.js?v=7" defer></script>
+  <script src="/js/p2p.js?v=7" defer></script>
+  <script src="/js/render.js?v=7" defer></script>
+  <script src="/js/import.js?v=7" defer></script>
+  <script src="/js/builder.js?v=7" defer></script>
+  <script src="/js/footer.js?v=7" defer></script>
+  <script src="/js/analytics.js?v=7" defer></script>
 </head>
 <body class="app-page builder-page">
   <header class="topbar">
     <a class="brand" href="/">ProxForm</a>
+    <nav class="topnav" aria-label="Primary navigation">
+      <a href="/">Home</a>
+      <a href="/forms.html">My forms</a>
+      <a href="/received.html">Received</a>
+    </nav>
     <div class="topbar-actions">
       <span id="net-status" class="net-status net-checking" title="Checking outbound connectivity to STUN…">Checking…</span>
       <span id="conn-status" class="conn-status">Not connected</span>
+      <a class="text-btn" href="/builder.html">Build a form</a>
       <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
     </div>
   </header>
@@ -32,7 +40,8 @@
   <main class="app-main">
 
     <!-- Step 1: build the form -->
-    <section id="step-build" class="step">
+    <section id="step-build" class="step hidden">
+      <a href="/forms.html" class="back-link">← All forms</a>
       <h1>Build the form</h1>
       <p class="muted">Add the questions you want your patient to answer. Nothing is saved on a server — this lives in your browser only.</p>
 
@@ -64,7 +73,7 @@
           </div>
 
           <div class="actions">
-            <button id="btn-generate" class="primary">Generate link →</button>
+            <button id="btn-generate" class="primary">Generate link <span class="arrow">→</span></button>
             <button id="btn-clear-draft" class="secondary" type="button">Clear draft</button>
           </div>
         </div>
@@ -80,7 +89,7 @@
           <div class="preview-frame">
             <h3 id="preview-title" class="preview-title muted">Untitled form</h3>
             <p id="preview-desc" class="preview-desc muted hidden"></p>
-            <div id="form-preview" class="patient-form preview-empty">
+            <div id="form-preview" class="patient-form preview-form preview-empty">
               <p class="empty">Add a section or question on the left to see a preview here.</p>
             </div>
           </div>
@@ -118,7 +127,25 @@
       </label>
 
       <div class="actions">
-        <button id="btn-connect" class="primary">Connect →</button>
+        <button id="btn-connect" class="primary">Connect <span class="arrow">→</span></button>
+      </div>
+    </section>
+
+    <!-- Step 4: view a saved submission (?submission=<id>) -->
+    <section id="step-submission" class="step hidden">
+      <a href="/received.html" class="back-link">← All submissions</a>
+      <div class="live-header">
+        <h1 id="sub-title">Submission</h1>
+        <div id="sub-id-badge" class="session-code" title="Submission ID"></div>
+      </div>
+      <p class="muted">Received <span id="sub-received"></span></p>
+
+      <div id="sub-view" class="patient-form preview-form"></div>
+
+      <div class="actions">
+        <button id="btn-sub-export" class="primary" type="button">Export JSON</button>
+        <button id="btn-sub-print" class="secondary" type="button">Print / PDF</button>
+        <button id="btn-sub-delete" class="secondary" type="button">Delete</button>
       </div>
     </section>
 
@@ -147,13 +174,13 @@
       <p class="footer-tagline"><strong>Private by design.</strong> ProxForm is <em>GDPR-compliant by architecture</em> — answers travel browser-to-browser, end-to-end encrypted. Like a sheet of paper, not a database.</p>
       <nav class="footer-nav">
         <a href="/#how">How it works</a>
-        <a href="/#why">Why GDPR-proof</a>
+        <a href="/gdpr.html">Why GDPR-proof</a>
         <a href="/#faq">FAQ</a>
         <button id="contact-btn" type="button" class="link-btn">Contact us</button>
       </nav>
       <p class="footer-attribution">
         ProxForm by <a href="https://artivicolab.com" target="_blank" rel="noopener">Artivicolab</a>
-        · Auditable · No accounts · No PHI at rest
+        · Auditable · No accounts · No PHI on any server
       </p>
     </div>
   </footer>

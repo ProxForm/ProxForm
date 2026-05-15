@@ -1,0 +1,119 @@
+<!doctype html>
+<!-- © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My forms — ProxForm</title>
+  <meta name="description" content="Your saved medical intake forms. Open, duplicate, export, or create a new one.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/icons/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css?v=7">
+  <script src="/js/theme.js?v=7" defer></script>
+  <script src="/js/netcheck.js?v=7" defer></script>
+  <script src="/js/storage.js?v=7" defer></script>
+  <script src="/js/render.js?v=7" defer></script>
+  <script src="/js/import.js?v=7" defer></script>
+  <script src="/js/builder.js?v=7" defer></script>
+  <script src="/js/footer.js?v=7" defer></script>
+  <script src="/js/analytics.js?v=7" defer></script>
+</head>
+<body class="app-page forms-page" data-page="forms">
+  <header class="topbar">
+    <a class="brand" href="/">ProxForm</a>
+    <nav class="topnav" aria-label="Primary navigation">
+      <a href="/">Home</a>
+      <a href="/forms.html" class="active">My forms</a>
+      <a href="/received.html">Received</a>
+    </nav>
+    <div class="topbar-actions">
+      <span id="net-status" class="net-status net-checking" title="Checking outbound connectivity to STUN…">Checking…</span>
+      <span id="conn-status" class="conn-status">Not connected</span>
+      <a class="text-btn" href="/builder.html">Build a form</a>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <section class="step">
+      <div class="dash-head">
+        <h1>My forms</h1>
+        <div class="dash-head-actions">
+          <button id="btn-import-form" class="secondary" type="button">Import…</button>
+          <button id="btn-new-form" class="primary" type="button">＋ New form</button>
+        </div>
+      </div>
+      <p class="muted">Forms are saved in this browser only — nothing on any server. Open one to edit, create a new one, or import from a text file.</p>
+
+      <div id="forms-list" class="forms-list" aria-live="polite"></div>
+    </section>
+
+    <!-- Import modal -->
+    <dialog id="import-dialog" class="dialog">
+      <h2>Import a form</h2>
+      <p class="muted">Paste a form definition or upload a file. Two formats are accepted: indented (human-friendly) or JSON.</p>
+      <details class="import-help">
+        <summary>Format example</summary>
+<pre><code>title: Pre-appointment intake
+description: Please fill before your visit
+
+# Patient Information
+text*    half    Full name
+date*    half    Date of birth
+text     half    Phone
+text     half    Email
+
+# Reason for Visit
+textarea*        Primary reason for visit
+yesno            Have you been treated for this before?
+checkbox         Do you have any of these conditions?
+                 - Diabetes
+                 - Hypertension
+                 - Heart disease
+                 - Asthma</code></pre>
+        <p class="muted small">
+          <code>*</code> after the type marks the field required.
+          <code>half</code> pairs the field on a row with the next half-width field.
+          Section headers start with <code>#</code>. Choices for radio/checkbox go on indented <code>- option</code> lines.
+        </p>
+      </details>
+      <label>
+        <span>Paste form definition</span>
+        <textarea id="import-text" rows="12" spellcheck="false" placeholder="title: My intake form
+description: ...
+
+# Section
+text*  half  Question..."></textarea>
+      </label>
+      <label class="file-row">
+        <span>…or upload a .txt / .json file</span>
+        <input id="import-file" type="file" accept=".txt,.json,text/plain,application/json">
+      </label>
+      <p id="import-error" class="error hidden"></p>
+      <div class="actions">
+        <button id="btn-import-do" class="primary" type="button">Import</button>
+        <button id="btn-import-cancel" class="secondary" type="button">Cancel</button>
+      </div>
+    </dialog>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <p class="footer-tagline"><strong>Private by design.</strong> ProxForm is <em>GDPR-compliant by architecture</em> — answers travel browser-to-browser, end-to-end encrypted. Like a sheet of paper, not a database.</p>
+      <nav class="footer-nav">
+        <a href="/#how">How it works</a>
+        <a href="/gdpr.html">Why GDPR-proof</a>
+        <a href="/#faq">FAQ</a>
+        <button id="contact-btn" type="button" class="link-btn">Contact us</button>
+      </nav>
+      <p class="footer-attribution">
+        ProxForm by <a href="https://artivicolab.com" target="_blank" rel="noopener">Artivicolab</a>
+        · Auditable · No accounts · No PHI on any server
+      </p>
+    </div>
+  </footer>
+</body>
+</html>
