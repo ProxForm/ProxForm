@@ -18,6 +18,33 @@ let currentFormId = null;
 
 let fields = [];   // [{ id, type, label, required, options?, column? }]
 let nextId = 1;
+const collapsedFields = new Set();   // ids whose editor body is hidden
+
+// ── Collapse-state persistence ────────────────────────────────────────────
+// Per-form so opening a different form doesn't inherit another form's
+// collapsed rows. UI-only state, no PHI — stored in localStorage.
+function collapsedStorageKey() {
+  return currentFormId ? 'proxform_collapsed_' + currentFormId : null;
+}
+function loadCollapsedState() {
+  collapsedFields.clear();
+  const key = collapsedStorageKey();
+  if (!key) return;
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return;
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr)) arr.forEach(id => collapsedFields.add(String(id)));
+  } catch (_) {}
+}
+function persistCollapsedState() {
+  const key = collapsedStorageKey();
+  if (!key) return;
+  try {
+    if (collapsedFields.size === 0) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify([...collapsedFields]));
+  } catch (_) {}
+}
 
 let pc = null;
 let dc = null;
@@ -52,6 +79,7 @@ function addField(type) {
 
 function removeField(id) {
   fields = fields.filter(f => f.id !== id);
+  if (collapsedFields.delete(id)) persistCollapsedState();
   renderFields();
   saveDraft();
 }
@@ -63,6 +91,25 @@ function moveField(id, delta) {
   [fields[i], fields[j]] = [fields[j], fields[i]];
   renderFields();
   saveDraft();
+}
+
+// Clone the field at `id` and insert the copy directly after it. The new row
+// gets a fresh id and " (copy)" appended to the label so it's obvious which
+// is which. Focuses the new row's label input so the user can edit immediately.
+function duplicateField(id) {
+  const i = fields.findIndex(f => f.id === id);
+  if (i < 0) return;
+  const src = fields[i];
+  const copy = JSON.parse(JSON.stringify(src));
+  copy.id = 'f' + (nextId++);
+  if (copy.label && !/\(copy\)\s*$/i.test(copy.label)) {
+    copy.label = copy.label + ' (copy)';
+  }
+  fields.splice(i + 1, 0, copy);
+  renderFields();
+  saveDraft();
+  // After the new DOM is in place, scroll to and focus the clone.
+  setTimeout(() => focusEditorRow(copy.id), 30);
 }
 
 function updateField(id, patch) {
@@ -82,18 +129,41 @@ function renderFields() {
   }
   root.innerHTML = fields.map((f, i) => fieldEditor(f, i)).join('');
 
-  root.querySelectorAll('[data-act]').forEach(btn => {
-    btn.addEventListener('click', () => {
+  // Header click anywhere outside the action buttons toggles collapsed state.
+  root.querySelectorAll('.field-edit-head').forEach(head => {
+    head.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return;
+      const wrapper = head.closest('.field-edit');
+      if (!wrapper) return;
+      const id = wrapper.dataset.fieldId;
+      if (!id) return;
+      if (collapsedFields.has(id)) collapsedFields.delete(id);
+      else collapsedFields.add(id);
+      wrapper.classList.toggle('collapsed', collapsedFields.has(id));
+      persistCollapsedState();
+    });
+  });
+
+  root.querySelectorAll('button[data-act]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       const id = btn.dataset.id;
       const act = btn.dataset.act;
-      if (act === 'remove') removeField(id);
-      else if (act === 'up')   moveField(id, -1);
-      else if (act === 'down') moveField(id, +1);
+      if (act === 'remove')         removeField(id);
+      else if (act === 'up')        moveField(id, -1);
+      else if (act === 'down')      moveField(id, +1);
+      else if (act === 'duplicate') duplicateField(id);
     });
   });
 
   root.querySelectorAll('[data-field-label]').forEach(inp => {
     inp.addEventListener('input', () => updateField(inp.dataset.fieldLabel, { label: inp.value }));
+  });
+  root.querySelectorAll('[data-field-hint]').forEach(inp => {
+    inp.addEventListener('input', () => updateField(inp.dataset.fieldHint, { hint: inp.value }));
+  });
+  root.querySelectorAll('[data-field-desc]').forEach(ta => {
+    ta.addEventListener('input', () => updateField(ta.dataset.fieldDesc, { description: ta.value }));
   });
   root.querySelectorAll('[data-field-req]').forEach(cb => {
     cb.addEventListener('change', () => updateField(cb.dataset.fieldReq, { required: cb.checked }));
@@ -109,6 +179,26 @@ function renderFields() {
   });
 
   renderPreview();
+}
+
+// Clicking a preview cell jumps to (and expands) the matching editor row.
+function focusEditorRow(id) {
+  if (!id) return;
+  if (collapsedFields.has(id)) {
+    collapsedFields.delete(id);
+    persistCollapsedState();
+  }
+  const target = document.querySelector(`.field-edit[data-field-id="${id}"]`);
+  if (!target) return;
+  target.classList.remove('collapsed');
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  target.classList.remove('flash');
+  // Force a reflow so re-adding the class restarts the animation.
+  void target.offsetWidth;
+  target.classList.add('flash');
+  setTimeout(() => target.classList.remove('flash'), 1300);
+  const labelInput = target.querySelector('[data-field-label]');
+  if (labelInput) labelInput.focus({ preventScroll: true });
 }
 
 // Mirror the patient's exact view as the clinician edits.
@@ -136,10 +226,36 @@ function renderPreview() {
     return;
   }
   root.classList.remove('preview-empty');
-  root.innerHTML = ProxRender.renderIntakeRows(
-    buildFormSnapshot().fields,
-    f => ProxRender.fieldCell(f, { disabled: true, key: 'preview' })
-  );
+
+  // Inline the row-pairing loop here so each cell/section can carry its
+  // own data-field-id and a clickable class. The patient view (fill.html)
+  // uses ProxRender directly and stays plain.
+  const snap = buildFormSnapshot();
+  let html = '';
+  let row = [];
+  const flushRow = () => {
+    if (row.length) html += `<div class="intake-row">${row.join('')}</div>`;
+    row = [];
+  };
+  for (const f of snap.fields) {
+    if (f.type === 'section') {
+      flushRow();
+      const desc = f.description ? `<div class="intake-section-desc">${escapeHtml(f.description)}</div>` : '';
+      html += `<div class="intake-section preview-clickable" data-field-id="${f.id}">${escapeHtml(f.label || '(untitled section)')}${desc}</div>`;
+      continue;
+    }
+    const cellHtml = ProxRender.fieldCell(f, { disabled: true, key: 'preview' })
+      .replace('<div class="intake-cell ', `<div class="intake-cell preview-clickable" data-field-id="${f.id}" tabindex="0" `);
+    if (f.column === 'half') {
+      row.push(cellHtml);
+      if (row.length === 2) flushRow();
+    } else {
+      flushRow();
+      html += `<div class="intake-row">${cellHtml}</div>`;
+    }
+  }
+  flushRow();
+  root.innerHTML = html;
 }
 
 function fieldEditor(f, i) {
@@ -153,6 +269,20 @@ function fieldEditor(f, i) {
       <textarea data-field-opts="${f.id}" rows="3">${escapeHtml((f.options || []).join('\n'))}</textarea>
     </label>
   ` : '';
+
+  const hintHtml = isSection ? '' : `
+    <label class="sub">
+      <span>Help text <span class="muted">(optional)</span></span>
+      <input type="text" data-field-hint="${f.id}" value="${escapeHtml(f.hint || '')}" placeholder="Shown under the question — e.g. &quot;No spaces or dashes&quot;">
+    </label>
+  `;
+
+  const sectionDescHtml = !isSection ? '' : `
+    <label class="sub">
+      <span>Description <span class="muted">(optional)</span></span>
+      <textarea data-field-desc="${f.id}" rows="2" placeholder="Shown under the section title — e.g. &quot;Please answer to the best of your knowledge.&quot;">${escapeHtml(f.description || '')}</textarea>
+    </label>
+  `;
 
   const flagsHtml = isSection ? '' : `
     <div class="field-flags">
@@ -169,22 +299,35 @@ function fieldEditor(f, i) {
 
   const labelPlaceholder = isSection ? 'Section title (e.g. Patient Information)' : 'Type the question…';
 
+  const isCollapsed = collapsedFields.has(f.id);
+  const summaryText = (f.label && f.label.trim())
+    ? f.label.trim()
+    : (isSection ? '(untitled section)' : '(untitled question)');
+  const reqStar = f.required ? ' *' : '';
+
   return `
-    <div class="field-edit ${isSection ? 'is-section' : ''}">
-      <div class="field-edit-head">
+    <div class="field-edit ${isSection ? 'is-section' : ''}${isCollapsed ? ' collapsed' : ''}" data-field-id="${f.id}">
+      <div class="field-edit-head" title="Click to expand/collapse">
+        <span class="field-toggle" aria-hidden="true">▾</span>
         <span class="field-type">${typeLabel}</span>
+        <span class="field-summary">${escapeHtml(summaryText)}${reqStar}</span>
         <div class="field-edit-actions">
-          <button class="icon-btn" data-act="up"     data-id="${f.id}" ${i === 0 ? 'disabled' : ''}>↑</button>
-          <button class="icon-btn" data-act="down"   data-id="${f.id}" ${i === fields.length - 1 ? 'disabled' : ''}>↓</button>
-          <button class="icon-btn" data-act="remove" data-id="${f.id}" aria-label="Remove">✕</button>
+          <button class="icon-btn" data-act="up"        data-id="${f.id}" ${i === 0 ? 'disabled' : ''}                 aria-label="Move up"   title="Move up">↑</button>
+          <button class="icon-btn" data-act="down"      data-id="${f.id}" ${i === fields.length - 1 ? 'disabled' : ''} aria-label="Move down" title="Move down">↓</button>
+          <button class="icon-btn" data-act="duplicate" data-id="${f.id}"                                              aria-label="Duplicate" title="Duplicate this field">⧉</button>
+          <button class="icon-btn" data-act="remove"    data-id="${f.id}"                                              aria-label="Remove"    title="Remove">✕</button>
         </div>
       </div>
-      <label class="sub">
-        <span>${isSection ? 'Section title' : 'Question'}</span>
-        <input type="text" data-field-label="${f.id}" value="${escapeHtml(f.label)}" placeholder="${labelPlaceholder}">
-      </label>
-      ${optsHtml}
-      ${flagsHtml}
+      <div class="field-edit-body">
+        <label class="sub">
+          <span>${isSection ? 'Section title' : 'Question'}</span>
+          <input type="text" data-field-label="${f.id}" value="${escapeHtml(f.label)}" placeholder="${labelPlaceholder}">
+        </label>
+        ${sectionDescHtml}
+        ${hintHtml}
+        ${optsHtml}
+        ${flagsHtml}
+      </div>
     </div>
   `;
 }
@@ -250,6 +393,8 @@ async function persistDraft() {
 async function clearDraft() {
   fields = [];
   nextId = 1;
+  collapsedFields.clear();
+  persistCollapsedState();
   document.getElementById('form-title').value = '';
   document.getElementById('form-desc').value = '';
   renderFields();
@@ -362,9 +507,12 @@ function buildFormSnapshot() {
     description: document.getElementById('form-desc').value.trim(),
     fields: fields.map(f => {
       const out = { id: f.id, type: f.type, label: f.label.trim() };
-      if (f.type !== 'section') {
+      if (f.type === 'section') {
+        if (f.description && String(f.description).trim()) out.description = String(f.description).trim();
+      } else {
         out.required = !!f.required;
         out.column = f.column === 'half' ? 'half' : 'full';
+        if (f.hint && String(f.hint).trim()) out.hint = String(f.hint).trim();
       }
       if (f.options) out.options = f.options.filter(Boolean);
       return out;
@@ -608,15 +756,15 @@ async function renderFormsList() {
       } else if (act === 'export') {
         const src = await ProxStore.getForm(id);
         if (!src) return;
-        const payload = {
-          title: src.title || '',
+        const yaml = ProxImport.toIndented({
+          title:       src.title || '',
           description: src.description || '',
-          fields: src.fields || []
-        };
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+          fields:      src.fields || []
+        });
+        const blob = new Blob([yaml], { type: 'text/plain' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = (slug(src.title) || 'form') + '.json';
+        a.download = (slug(src.title) || 'form') + '.yaml';
         a.click();
         URL.revokeObjectURL(a.href);
       }
@@ -749,6 +897,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('form-title')?.addEventListener('input', () => { saveDraft(); renderPreview(); });
   document.getElementById('form-desc')?.addEventListener('input',  () => { saveDraft(); renderPreview(); });
 
+  // Click a preview cell → expand and jump to its editor row.
+  document.getElementById('form-preview')?.addEventListener('click', (e) => {
+    const el = e.target.closest('.preview-clickable');
+    if (!el) return;
+    focusEditorRow(el.dataset.fieldId);
+  });
+
   // Route based on the URL:
   //   ?form=<id>       → editor
   //   ?submission=<id> → submission detail view
@@ -769,6 +924,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (currentFormId) {
+    loadCollapsedState();
     const ok = await loadForm(currentFormId);
     if (!ok) {
       toast('That form no longer exists');

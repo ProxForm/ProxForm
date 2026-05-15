@@ -11,6 +11,7 @@ const ASSETS = [
   '/received.html',
   '/fill.html',
   '/gdpr.html',
+  '/import.html',
   '/css/style.css?v=7',
   '/js/crypto.js?v=7',
   '/js/p2p.js?v=7',

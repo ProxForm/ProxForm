@@ -40,6 +40,15 @@
         continue;
       }
 
+      // Indented "> text" line: attaches a hint to the field above, or a
+      // description to the section above.
+      const hintMatch = /^\s+>\s+(.+?)\s*$/.exec(raw);
+      if (hintMatch && lastField) {
+        if (lastField.type === 'section') lastField.description = hintMatch[1];
+        else lastField.hint = hintMatch[1];
+        continue;
+      }
+
       const trimmed = raw.trim();
 
       // Meta: title: / description:
@@ -119,9 +128,12 @@
         type,
         label: String(f.label || '').trim()
       };
-      if (type !== 'section') {
+      if (type === 'section') {
+        if (f.description && String(f.description).trim()) out.description = String(f.description).trim();
+      } else {
         out.required = !!f.required;
         out.column   = f.column === 'half' ? 'half' : 'full';
+        if (f.hint && String(f.hint).trim()) out.hint = String(f.hint).trim();
       }
       if (Array.isArray(f.options) && f.options.length) {
         out.options = f.options.map(String);
@@ -144,5 +156,42 @@
     return parseIndented(s);
   }
 
-  window.ProxImport = { parseIndented, parseJSON, parseAuto };
+  // ── Serializer: form → YAML-style indented text ────────────────────────
+  // Inverse of parseIndented. Columns are padded so the output reads cleanly
+  // in a plain text editor. Round-trips through parseIndented losslessly for
+  // the v1 field schema.
+  function toIndented(form) {
+    const out = [];
+    if (form && form.title)       out.push('title: ' + String(form.title));
+    if (form && form.description) out.push('description: ' + String(form.description));
+
+    const fields = (form && Array.isArray(form.fields)) ? form.fields : [];
+    for (const f of fields) {
+      if (!f || !f.type) continue;
+      if (f.type === 'section') {
+        if (out.length) out.push('');
+        out.push('# ' + String(f.label || ''));
+        if (f.description && String(f.description).trim()) {
+          out.push('                 > ' + String(f.description).trim());
+        }
+        continue;
+      }
+      const star = f.required ? '*' : '';
+      const mod  = f.column === 'half' ? 'half' : '';
+      const typeCol = (f.type + star).padEnd(9, ' ');
+      const modCol  = mod.padEnd(6, ' ');
+      out.push(typeCol + modCol + String(f.label || ''));
+      if (f.hint && String(f.hint).trim()) {
+        out.push('                 > ' + String(f.hint).trim());
+      }
+      if ((f.type === 'radio' || f.type === 'checkbox') && Array.isArray(f.options)) {
+        for (const opt of f.options) {
+          out.push('                 - ' + String(opt));
+        }
+      }
+    }
+    return out.join('\n') + '\n';
+  }
+
+  window.ProxImport = { parseIndented, parseJSON, parseAuto, toIndented };
 })();

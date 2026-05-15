@@ -49,6 +49,17 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Sticky footer: body fills the viewport, main grows, footer hugs the bottom
+   so a short page doesn't leave the footer floating mid-screen. */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+body > main { flex: 1 0 auto; }
+body > .footer { flex-shrink: 0; margin-top: auto; }
+
 a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
@@ -442,6 +453,59 @@ html { scroll-behavior: smooth; }
   font-size: 0.82rem;
 }
 
+/* Import-docs page (/import.html) — code blocks, type cards, inline code. */
+body.import-page main { max-width: 880px; }
+body.import-page h2 { margin-top: 2.2rem; }
+body.import-page h3 { margin-top: 1.6rem; }
+body.import-page h4 { margin: 0 0 0.4em; font-size: 0.95rem; }
+body.import-page p code,
+body.import-page li code {
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.86em;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+pre.import-doc {
+  margin: 0.5rem 0 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 3px 3px 0 var(--border);
+  overflow-x: auto;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+pre.import-doc code {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  white-space: pre;
+}
+.import-types {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin-top: 0.75rem;
+}
+.import-type {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+}
+.import-type p { font-size: 0.9rem; color: var(--muted); margin: 0 0 0.5rem; }
+.import-type pre.import-doc {
+  margin: 0;
+  box-shadow: none;
+  border-width: 1px;
+}
+html[data-theme="dark"] pre.import-doc { box-shadow: 3px 3px 0 var(--accent); }
+
 /* ── Form builder ───────────────────────────────────────────────────── */
 
 .builder-layout { display: grid; gap: 1.5rem; align-items: start; }
@@ -545,6 +609,15 @@ html { scroll-behavior: smooth; }
 .preview-form .choices.inline label,
 .printing-preview .choices.inline label { font-size: 0.88rem; }
 
+.intake-hint {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: -0.1rem 0 0.35rem;
+  line-height: 1.4;
+}
+.preview-form .intake-hint,
+.printing-preview .intake-hint { color: #4a4030; }
+
 .form-meta { margin-bottom: 1.5rem; }
 
 .fields-list .empty {
@@ -578,20 +651,85 @@ html { scroll-behavior: smooth; }
 
 .field-edit-head {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.6rem;
+  gap: 0.6rem;
+  margin: -0.4rem -0.5rem 0.4rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: calc(var(--radius) - 2px);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 120ms ease;
 }
+.field-edit-head:hover { background: var(--surface-2); }
+.field-edit.collapsed .field-edit-head { margin-bottom: -0.4rem; }
+.field-edit.collapsed .field-edit-body { display: none; }
+
+.field-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  transition: transform 140ms ease, background-color 120ms ease;
+  flex-shrink: 0;
+}
+.field-edit-head:hover .field-toggle {
+  background: var(--accent);
+  border-color: #0f0f0f;
+}
+.field-edit.collapsed .field-toggle { transform: rotate(-90deg); }
 
 .field-type {
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--primary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  flex-shrink: 0;
 }
 
-.field-edit-actions { display: flex; gap: 0.3rem; }
+.field-summary {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.92rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: 0.4rem;
+}
+.field-edit:not(.collapsed) .field-summary { display: none; }
+
+.field-edit-actions {
+  display: flex;
+  gap: 0.3rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Brief highlight when the user jumps from preview → editor. */
+@keyframes pf-field-flash {
+  0%   { box-shadow: 0 0 0 3px var(--accent), var(--shadow); }
+  100% { box-shadow: 0 0 0 0 transparent, var(--shadow); }
+}
+.field-edit.flash { animation: pf-field-flash 1.3s ease-out; }
+
+/* Preview cells are clickable — show a soft hover hint so users know to try. */
+.preview-clickable { cursor: pointer; transition: outline-color 100ms ease; }
+.preview-form .preview-clickable:hover,
+.preview-form .preview-clickable:focus-visible {
+  outline: 2px dashed var(--primary);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+.preview-form .preview-clickable:focus-visible { outline-style: solid; }
 
 .sub { margin-bottom: 0.7rem; }
 .sub > span {
@@ -661,6 +799,15 @@ html { scroll-behavior: smooth; }
   color: var(--text);
 }
 .intake-section:first-child { border-top: none; }
+.intake-section-desc {
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+  line-height: 1.4;
+}
+.preview-form .intake-section-desc,
+.printing-preview .intake-section-desc { color: #4a4030; }
 
 .intake-row {
   display: flex;
@@ -972,32 +1119,103 @@ html[data-theme="dark"] .who-card {
 
 .cta { text-align: center; }
 
+/* Pop-art footer: red ink top stripe with comic dots, oversized tagline, and
+   nav links styled as chip-buttons with hard-offset shadows. */
 .footer {
+  position: relative;
   margin-top: 3rem;
-  padding: 2rem 1.25rem;
-  color: var(--muted);
-  font-size: 0.9rem;
+  padding: 2.6rem 1.25rem 1.6rem;
+  color: var(--text);
+  font-size: 0.95rem;
   background: var(--surface);
-  border-top: 1px solid var(--border);
+  border-top: 3px solid #0f0f0f;
+  background-image:
+    radial-gradient(circle, rgba(15, 15, 15, 0.07) 1px, transparent 1.5px);
+  background-size: 12px 12px;
+  background-position: 0 0;
+}
+.footer::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 14px;
+  background:
+    repeating-linear-gradient(90deg,
+      var(--primary) 0 18px,
+      #0f0f0f 18px 22px,
+      var(--accent) 22px 40px,
+      #0f0f0f 40px 44px);
+  border-bottom: 3px solid #0f0f0f;
 }
 .footer-inner {
   max-width: 980px;
   margin: 0 auto;
   display: grid;
-  gap: 0.85rem;
+  gap: 1.25rem;
+  padding-top: 0.5rem;
 }
-.footer-tagline { margin: 0; font-size: 0.95rem; }
-.footer-tagline strong { color: var(--text); }
-.footer-tagline em { color: var(--primary); font-style: normal; font-weight: 600; }
+.footer-tagline {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--text);
+  max-width: 720px;
+}
+.footer-tagline strong {
+  color: var(--text);
+  background: var(--accent);
+  padding: 0 0.3em;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  border: 1.5px solid #0f0f0f;
+  box-shadow: 2px 2px 0 #0f0f0f;
+  display: inline-block;
+  margin-right: 0.15em;
+}
+.footer-tagline em {
+  color: var(--primary-ink);
+  background: var(--primary);
+  font-style: normal;
+  font-weight: 800;
+  padding: 0 0.3em;
+  border: 1.5px solid #0f0f0f;
+  box-shadow: 2px 2px 0 #0f0f0f;
+  display: inline-block;
+}
 
 .footer-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem 1.1rem;
+  gap: 0.55rem 0.6rem;
   align-items: center;
 }
-.footer-nav a, .footer-nav .link-btn { color: var(--primary); text-decoration: none; }
-.footer-nav a:hover, .footer-nav .link-btn:hover { text-decoration: underline; }
+.footer-nav a, .footer-nav .link-btn {
+  display: inline-block;
+  color: var(--text);
+  background: var(--surface);
+  border: 2px solid #0f0f0f;
+  border-radius: var(--radius);
+  padding: 0.35rem 0.75rem;
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  box-shadow: 2px 2px 0 #0f0f0f;
+  transition: transform 80ms ease, box-shadow 80ms ease, background-color 120ms ease;
+}
+.footer-nav a:hover, .footer-nav .link-btn:hover {
+  background: var(--accent);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 #0f0f0f;
+  text-decoration: none;
+}
+.footer-nav a:active, .footer-nav .link-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 #0f0f0f;
+}
 
 .link-btn {
   background: none;
@@ -1006,12 +1224,46 @@ html[data-theme="dark"] .who-card {
   margin: 0;
   cursor: pointer;
   font: inherit;
-  color: var(--primary);
+  color: var(--text);
 }
 
-.footer-attribution { margin: 0; font-size: 0.82rem; }
-.footer-attribution a { color: var(--text); font-weight: 600; }
-.footer-attribution a:hover { color: var(--primary); }
+.footer-attribution {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  border-top: 1.5px dashed #0f0f0f;
+  padding-top: 1rem;
+}
+.footer-attribution a {
+  color: var(--text);
+  background: var(--accent);
+  font-weight: 800;
+  padding: 0.05rem 0.4rem;
+  border: 1.5px solid #0f0f0f;
+  border-radius: 4px;
+  text-decoration: none;
+}
+.footer-attribution a:hover { background: var(--primary); color: var(--primary-ink); }
+
+html[data-theme="dark"] .footer {
+  border-top-color: var(--accent);
+  background-image:
+    radial-gradient(circle, rgba(252, 209, 22, 0.07) 1px, transparent 1.5px);
+}
+html[data-theme="dark"] .footer::before { border-bottom-color: var(--accent); }
+html[data-theme="dark"] .footer-tagline strong,
+html[data-theme="dark"] .footer-tagline em,
+html[data-theme="dark"] .footer-nav a,
+html[data-theme="dark"] .footer-nav .link-btn,
+html[data-theme="dark"] .footer-attribution a {
+  border-color: var(--accent);
+  box-shadow: 2px 2px 0 var(--accent);
+}
+html[data-theme="dark"] .footer-nav a:hover,
+html[data-theme="dark"] .footer-nav .link-btn:hover { box-shadow: 3px 3px 0 var(--accent); }
+html[data-theme="dark"] .footer-nav a:active,
+html[data-theme="dark"] .footer-nav .link-btn:active { box-shadow: 1px 1px 0 var(--accent); }
+html[data-theme="dark"] .footer-attribution { border-top-color: var(--accent); }
 
 @media print { .footer { display: none !important; } }
 

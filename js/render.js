@@ -19,6 +19,7 @@ function fieldCell(f, opts) {
   const reqStar = f.required ? ' <span class="req">*</span>' : '';
   const half = f.column === 'half' ? 'half' : 'full';
   const label = `<div class="intake-label">${_esc(f.label || '(untitled question)')}${reqStar}</div>`;
+  const hint = f.hint ? `<div class="intake-hint">${_esc(f.hint)}</div>` : '';
 
   let body = '';
   if (f.type === 'text') {
@@ -51,7 +52,7 @@ function fieldCell(f, opts) {
       </div>`;
   }
 
-  return `<div class="intake-cell ${half}">${label}${body}</div>`;
+  return `<div class="intake-cell ${half}">${label}${hint}${body}</div>`;
 }
 
 // Walk the schema, output section bands and pair half-width fields into rows.
@@ -68,7 +69,8 @@ function renderIntakeRows(items, cellRenderer) {
   for (const f of items) {
     if (f.type === 'section') {
       flushRow();
-      out += `<div class="intake-section">${_esc(f.label || '(untitled section)')}</div>`;
+      const desc = f.description ? `<div class="intake-section-desc">${_esc(f.description)}</div>` : '';
+      out += `<div class="intake-section">${_esc(f.label || '(untitled section)')}${desc}</div>`;
       continue;
     }
     const cell = cellRenderer(f);

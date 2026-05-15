@@ -1,0 +1,94 @@
+<!doctype html>
+<!-- © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Page not found — ProxForm</title>
+  <meta name="description" content="That page doesn't exist on ProxForm. Head back to the home page or jump into the builder.">
+  <meta name="theme-color" content="#e30613">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/icons/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css?v=7">
+  <script src="/js/theme.js?v=7" defer></script>
+  <script src="/js/netcheck.js?v=7" defer></script>
+  <script src="/js/footer.js?v=7" defer></script>
+  <script src="/js/analytics.js?v=7" defer></script>
+  <script defer>window.addEventListener('DOMContentLoaded', () => ProxNet.checkAndDisplay('net-status'));</script>
+</head>
+<body class="home-page">
+  <header class="topbar">
+    <a class="brand" href="/">ProxForm</a>
+    <nav class="topnav" aria-label="Primary navigation">
+      <a href="/">Home</a>
+      <a href="/forms.html">My forms</a>
+      <a href="/import.html">Import</a>
+      <a href="/received.html">Received</a>
+    </nav>
+    <div class="topbar-actions">
+      <span id="net-status" class="net-status net-checking" title="Checking outbound connectivity to STUN…">Checking…</span>
+      <span id="conn-status" class="conn-status">Not connected</span>
+      <a class="text-btn" href="/builder.html">Build a form</a>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="gdpr-badge" aria-label="404">
+        <span class="gdpr-badge-mark">404</span>
+        <span class="gdpr-badge-text">Page not found</span>
+      </div>
+      <h1>This page <em>doesn't exist</em>.</h1>
+      <p class="lede">The link you followed points to a page that isn't on ProxForm. It might have been moved, renamed, or never existed in the first place. The good news: nothing was lost &mdash; there's no server to lose anything on.</p>
+      <div class="hero-cta">
+        <a class="primary big" href="/">Back to home <span class="arrow">→</span></a>
+      </div>
+      <p class="micro">If you got here from a ProxForm link inside the app, that's a bug &mdash; let us know via the Contact button below.</p>
+    </section>
+
+    <section class="who">
+      <h2>Where you were probably trying to go</h2>
+      <div class="who-grid">
+        <div class="who-card">
+          <div class="who-tag">Build</div>
+          <p>Start a new GDPR-proof intake form and share it with a patient. <a href="/builder.html">Open the builder &rarr;</a></p>
+        </div>
+        <div class="who-card">
+          <div class="who-tag">My forms</div>
+          <p>Open, duplicate, or export forms you've already saved on this device. <a href="/forms.html">Go to forms &rarr;</a></p>
+        </div>
+        <div class="who-card">
+          <div class="who-tag">Import</div>
+          <p>Paste a YAML-style or JSON form definition and create a form in one click. <a href="/import.html">Import a form &rarr;</a></p>
+        </div>
+        <div class="who-card">
+          <div class="who-tag">Received</div>
+          <p>Browse the submissions patients have sent back to you on this device. <a href="/received.html">Go to received &rarr;</a></p>
+        </div>
+        <div class="who-card">
+          <div class="who-tag">GDPR claims</div>
+          <p>The full list of architectural and cryptographic claims behind ProxForm. <a href="/gdpr.html">Read the claims &rarr;</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <p class="footer-tagline"><strong>Private by design.</strong> ProxForm is <em>GDPR-compliant by architecture</em> &mdash; answers travel browser-to-browser, end-to-end encrypted. Like a sheet of paper, not a database.</p>
+      <nav class="footer-nav">
+        <a href="/#how">How it works</a>
+        <a href="/gdpr.html">Why GDPR-proof</a>
+        <a href="/#faq">FAQ</a>
+        <button id="contact-btn" type="button" class="link-btn">Contact us</button>
+      </nav>
+      <p class="footer-attribution">
+        ProxForm by <a href="https://artivicolab.com" target="_blank" rel="noopener">Artivicolab</a>
+        &middot; Auditable &middot; No accounts &middot; No PHI on any server
+      </p>
+    </div>
+  </footer>
+</body>
+</html>
