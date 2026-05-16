@@ -2416,11 +2416,15 @@ body.home-page main > section + section { border-top: 1px solid var(--border); }
   background: var(--surface-2, #fcf7e0);
   color: var(--text);
 }
+/* Deep brand red, not the bright #e30613 — white body text on #e30613 is
+   only ~3.9:1 (fails WCAG AA 4.5:1). #8a0309 takes white to ~10:1 and
+   still reads as the brand. The aside is full-opacity white (the old 85%
+   alpha dropped it below AA too). */
 .home-page .pitch-card.pitch-gdpr {
-  background: var(--primary, #e30613);
+  background: #8a0309;
   color: #fff;
 }
-.home-page .pitch-card.pitch-gdpr .pitch-aside { color: rgba(255, 255, 255, 0.85); }
+.home-page .pitch-card.pitch-gdpr .pitch-aside { color: #fff; }
 /* Dark mode: --primary is cream, so the red→white card would vanish.
    Recolour it as the yellow pop card with dark text instead. */
 html[data-theme="dark"] .home-page .pitch-card.pitch-gdpr {
@@ -2445,7 +2449,7 @@ html[data-theme="dark"] .home-page .pitch-card.pitch-gdpr .pitch-tag {
   border-radius: 999px;
 }
 .home-page .pitch-card.pitch-paper .pitch-tag { background: var(--accent, #fcd116); color: var(--ink, #111); border-color: var(--ink, #111); }
-.home-page .pitch-card.pitch-gdpr  .pitch-tag { background: #fff; color: var(--primary, #e30613); border-color: #fff; }
+.home-page .pitch-card.pitch-gdpr  .pitch-tag { background: #fff; color: #8a0309; border-color: #fff; }
 .home-page .pitch-card h2 {
   margin: 0;
   font-size: clamp(1.6rem, 2.5vw, 2.1rem);
