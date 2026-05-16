@@ -54,7 +54,7 @@ The clinician side is **one single HTML document** — `/app.html`. Every clinic
 /js/shield.js        → ProxShield: idle-based privacy shield (mask answers with ***)
 /js/netcheck.js      → ProxNet: WebRTC connectivity probe
 /js/footer.js        → Contact-email obfuscation (atob-built mailto)
-/js/analytics.js     → INERT GA4 loader — fires only if GA_ID is filled. Default off.
+/js/analytics.js     → Consent-gated GA4 (G-WTGX62S0G9). Landing page ONLY, opt-in only. See "Analytics" below.
 /js/theme.js         → Dark/light toggle (localStorage: proxform_theme)
 /js/templates.js     → 5 industry starter forms surfaced by the "From template…" picker
 /js/import.js        → ProxImport: YAML-style + JSON parse / validate / pretty-print + ProxImportView
@@ -154,7 +154,7 @@ Corrections (`sendCorrection`) inherit the original submission's ticket and appe
 ## The wire protocol
 
 1. **Clinician builds form** in `#/build/<formId>`. Field types: `section`, `pagebreak`, `text`, `textarea`, `number`, `date`, `radio`, `checkbox`, `yesno`, `file`, `signature`. Each non-structural field has `required` and `column: 'half' | 'third' | 'quarter' | 'full'`. Consecutive same-width fields share a row.
-2. **Generate invite** → `ProxSessions.create({formSnapshot, formId})`. Creates `RTCPeerConnection`, gathers ICE, encrypts SDP offer with a generated passphrase (PBKDF2 100k iters → AES-256-GCM), produces a link like `https://proxform.com/fill.html#offer=...`. Clinician is routed to `#/received` — the new card sits in the Portal.
+2. **Generate invite** → `ProxSessions.create({formSnapshot, formId})`. Creates `RTCPeerConnection`, gathers ICE, encrypts SDP offer with a generated passphrase (PBKDF2 100k iters → AES-256-GCM), produces a link like `https://proxform.artivicolab.com/fill.html#offer=...`. Clinician is routed to `#/received` — the new card sits in the Portal.
 3. **Out-of-band**: clinician shares link via one channel, passphrase via another. Two-channel split is the security property.
 4. **Patient opens link** → enters passphrase → decrypts SDP → builds answer → encrypts answer → sends reply link back.
 5. **Clinician pastes reply** in the session card → ICE completes → data channel opens.
@@ -251,16 +251,38 @@ Shared footer with: GDPR-proof tagline, anchor links to `/#how`, `/#why`, `/#faq
 ## GDPR posture
 
 - **No controller-side storage by default** → no Article 30 record-of-processing for transit. The clinician saving a copy to their own device is their responsibility under their own legal basis.
-- **No third-party processors** (no Stripe, no Sentry, no analytics enabled). `js/analytics.js` is shipped inert — enabling it would introduce Google as a processor and require a consent banner.
+- **No third-party processors on the patient/app path** (no Stripe, no Sentry). Analytics is consent-gated GA4 on the **public landing page only** — never on `app.html` or `fill.html`. See "Analytics" below; this scoping is load-bearing for the GDPR/HIPAA claims.
 - **Encryption in transit**: WebRTC DTLS 1.3 (browser-default) + AES-256-GCM on the handshake metadata.
 - **No cookies**, no tracking. `localStorage` only for theme + shield-interval preference + ticket counter. IndexedDB for clinician templates, submissions, dormant-session metadata, drafts. All on the user's own device.
 - **Data at rest on the clinician's device is shielded by default** (asterisks on idle and per-card). End Shift wipes it.
 
 If you're tempted to add an "upload to cloud" or "send to clinician's email" backend, **stop and ask the user**. That changes the legal model entirely (controller/processor relationship, DPA, hosting jurisdiction).
 
-## SEO positioning
+## Domain
 
-`index.html` is the SEO entry point. `<title>` and `<meta description>` lead with "GDPR-Proof Medical Forms — 100% Browser-Only," the hero shows a `gdpr-badge` + pillar grid, and there are two `<script type="application/ld+json">` blocks (SoftwareApplication + FAQPage) for rich snippets. The page is also reachable from inside the SPA at `#/home` — the router fetches `index.html`'s `<main>` and injects it. Don't soften the GDPR copy without checking with the user — it's the headline value prop.
+Live domain is **`https://proxform.artivicolab.com`** (GitHub Pages + `CNAME` file at repo root). NOT `proxform.com`. All canonical / OG / `sitemap.xml` / `robots.txt` / `llms.txt` URLs use `proxform.artivicolab.com`. If you ever see `proxform.com` in an SEO-facing file it's a regression — it must match the live host or indexing breaks.
+
+## Analytics
+
+**`js/analytics.js` is consent-gated Google Analytics 4 (`G-WTGX62S0G9`), landing page only.** Rules, in order of importance:
+
+1. **GA only loads on the public landing page** (`/` or `/index.html` with `body.home-page`). `isLandingHome()` enforces this. It is a hard no-op on `app.html`, `fill.html`, `gdpr.html`, `hipaa.html` — the PHI path stays analytics-free.
+2. **GA does not load until the visitor clicks "Accept"** on the consent banner (`showBanner()`). Decline writes `localStorage.proxform_ga_consent = 'denied'` and GA never loads. Accept → `'granted'` → `loadGA()` injects gtag (anonymized IP, ad signals off).
+3. **GA4's "Data collection isn't active" warning is EXPECTED and will likely never clear.** Google's setup detector loads the page headlessly and cannot click the consent banner, so it never sees the tag. This is not a bug. Verify by real Realtime hits after manually clicking Accept on the live site — not by the GA4 setup banner.
+4. **DO NOT "fix" the warning by pasting Google's raw `gtag` snippet into `<head>`** (what GA4's own instructions say). That fires GA on every page including the patient/PHI path with no consent and detonates the entire GDPR/HIPAA story. The persistent warning is the correct price of privacy-clean analytics.
+5. The GDPR/HIPAA/FAQ copy is already scoped to say "the app and patient path collect nothing; the public landing page uses consent-gated Google Analytics." Keep that distinction if you touch the copy.
+
+## SEO / AI-SEO
+
+`index.html` is the SEO entry point — title/description lead with "GDPR-Proof Medical Forms — 100% Browser-Only." Structured data in place:
+
+- `index.html`: JSON-LD for **Organization** (Artivicolab), **WebSite**, **SoftwareApplication**, **FAQPage**.
+- `gdpr.html` / `hipaa.html`: **TechArticle** JSON-LD (author/publisher = Artivicolab).
+- All 3 marketing pages: `og:image` + Twitter cards (currently `→ /icons/logo-lockup.png`; a dedicated 1200×630 `/icons/og-card.png` is the planned upgrade — repoint `og:image`/`twitter:image` on all 3 + bump cache when it lands), `robots` meta `max-image-preview:large, max-snippet:-1`, `author` meta.
+- **`/llms.txt`** (llmstxt.org convention) — concise factual brief so AI assistants answer accurately ("not a cloud SaaS, no servers, owned by Artivicolab"). Keep it current if the product story changes.
+- **`robots.txt`** explicitly welcomes AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, etc.) on the marketing pages while disallowing the app/PHI pages for everyone.
+
+The landing page is also reachable inside the SPA at `#/home` (router fetches `index.html`'s `<main>`). Don't soften the GDPR copy without checking with the user — it's the headline value prop.
 
 ## Monetization (planned, not built)
 
@@ -270,9 +292,7 @@ User wants to charge eventually but no pricing page exists yet. Recommended path
 
 - **No i18n.** English only. (French phone/courriel patterns landed for input sniffing, but UI strings aren't translated.)
 - **No native PDF export.** Print → Save as PDF is the path. jsPDF could come later.
-- **No analytics enabled.** `js/analytics.js` is a placeholder; conflicts with the GDPR pitch if turned on.
 - **No pricing / paywall.**
-- **No service worker registration.** `sw.js` exists and is wired but nothing calls `navigator.serviceWorker.register('/sw.js')`. Add a registration line in `app.html` if PWA caching is desired.
 - **No YAML round-trip for `showIf`.** JSON only.
 - **Single file per `file` field.** No multi-file.
 
