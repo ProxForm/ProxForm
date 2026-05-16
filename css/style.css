@@ -123,12 +123,21 @@ p { margin: 0 0 1em; }
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   font-weight: 700;
   font-size: 1.15rem;
   color: var(--text);
   letter-spacing: -0.01em;
 }
 .brand:hover { text-decoration: none; }
+.brand-logo {
+  width: 26px;
+  height: 26px;
+  display: block;
+  flex-shrink: 0;
+}
 
 .topbar-actions { display: flex; align-items: center; gap: 0.75rem; }
 
@@ -1956,6 +1965,22 @@ html[data-theme="dark"] body.home-page::before {
 /* Mirror layer — sits between the halftone dots and the content. A diagonal
    sheen reads like glass catching light; the radial wash brightens the center
    so the foreground text stays the focus. */
+/* Mascot illustrations — bounded so the ~300-400KB PNGs never render
+   huge. Centered, no layout shift (width/height attrs set in HTML). */
+.mascot-img {
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+.mascot-404 {
+  width: min(280px, 60vw);
+  margin: 0 auto 1.25rem;
+}
+.mascot-empty {
+  width: min(160px, 40vw);
+  margin: 0 auto 0.75rem;
+}
+
 /* Google Analytics consent banner (js/analytics.js) — landing page only.
    GA does not load until Accept is clicked. Pop-art bottom bar. */
 .ga-consent {

@@ -7,7 +7,12 @@
   <title>Received submissions — ProxForm</title>
   <meta name="description" content="Completed medical forms submitted by patients. Stored only on this device.">
   <meta name="robots" content="noindex">
-  <link rel="icon" href="/icons/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=12">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=12">
+  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png?v=12">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon-180x180.png?v=12">
+  <meta name="msapplication-TileColor" content="#e30613">
+  <meta name="msapplication-config" content="/browserconfig.xml">
   <link rel="manifest" href="/manifest.json">
   <script>
     // Legacy page — redirect to the SPA shell.
@@ -28,7 +33,7 @@
 </head>
 <body class="app-page received-page" data-page="received">
   <header class="topbar">
-    <a class="brand" href="/">ProxForm</a>
+    <a class="brand" href="/"><img src="/favicon-96x96.png" alt="" class="brand-logo" width="26" height="26">ProxForm</a>
     <nav class="topnav" aria-label="Primary navigation">
       <a href="/">Home</a>
       <a href="/forms.html">My forms</a>
@@ -54,6 +59,7 @@
       <p class="muted">Send a form to a patient and watch their reply land. Multiple sessions can run in parallel — each one is a card below. Nothing is on a server; everything lives in this tab until you close it (submissions persist on your device only).</p>
 
       <div id="onboarding-hint" class="onboarding-hint" hidden>
+        <img src="/icons/empty.png" alt="" class="mascot-img mascot-empty" width="160" height="160" loading="lazy" decoding="async">
         <h3>👋 New here? Start with a template.</h3>
         <p>You don't have any forms yet. The fastest start:</p>
         <ol>
