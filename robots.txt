@@ -1,9 +1,9 @@
 # ProxForm — only the public marketing pages are crawlable.
 #
 # The app shell and the patient pages are dynamic, contain no indexable
-# content, and sit on the PHI path. They are explicitly disallowed here
-# (and also carry <meta name="robots" content="noindex">). Crawlers and
-# any analytics must stay on the marketing surface only.
+# content, and sit on the PHI path. They are explicitly disallowed for
+# every crawler (and also carry <meta name="robots" content="noindex">).
+# Search and AI crawlers are welcome on the marketing surface only.
 
 User-agent: *
 Disallow: /app.html
@@ -13,6 +13,29 @@ Disallow: /received.html
 Disallow: /import.html
 Disallow: /fill.html
 
-# Everything else (/, /gdpr.html, /hipaa.html, static assets) is fine.
+# ── AI / LLM crawlers ────────────────────────────────────────────────
+# Explicitly welcomed on the marketing pages (so ProxForm can be cited
+# accurately) but kept off the app + patient path like everyone else.
+# See /llms.txt for a concise, factual brand summary for AI answers.
+
+User-agent: GPTBot
+User-agent: ChatGPT-User
+User-agent: OAI-SearchBot
+User-agent: ClaudeBot
+User-agent: Claude-Web
+User-agent: anthropic-ai
+User-agent: PerplexityBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: CCBot
+Disallow: /app.html
+Disallow: /builder.html
+Disallow: /forms.html
+Disallow: /received.html
+Disallow: /import.html
+Disallow: /fill.html
+
+# Everything else (/, /gdpr.html, /hipaa.html, /llms.txt, static assets)
+# is fine for all of the above.
 
 Sitemap: https://proxform.com/sitemap.xml
