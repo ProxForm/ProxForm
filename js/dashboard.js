@@ -63,6 +63,11 @@
     let forms = [];
     try { forms = await ProxStore.listForms(); } catch (_) {}
     sel.innerHTML = '';
+    // First-run guidance: show the onboarding card only when the clinic
+    // has zero saved forms (fresh device / after End Shift never touches
+    // forms, so this really means "brand new install").
+    const hint = document.getElementById('onboarding-hint');
+    if (hint) hint.hidden = forms.length > 0;
     if (!forms.length) {
       const opt = document.createElement('option');
       opt.value = '';
@@ -135,7 +140,7 @@
     return `
       <article class="session-card ${stateCls}" data-session="${escapeHtml(s.id)}">
         <header class="session-card-head">
-          <button class="session-card-toggle" type="button" data-act="toggle" aria-expanded="false" title="Expand / collapse this session">▸</button>
+          <button class="session-card-toggle" type="button" data-act="toggle" aria-expanded="false" title="Expand / collapse this session">▾</button>
           <span class="session-card-id">#${escapeHtml(shortId(s.id))}</span>
           <span class="session-card-label">${label}</span>
           <span class="session-card-title">${title}</span>
@@ -244,13 +249,11 @@
       if (open) {
         body.removeAttribute('hidden');
         tog?.setAttribute('aria-expanded', 'true');
-        if (tog) tog.textContent = '▾';
         expandedCards.add(sessionId);
         renderPreviewInto(card, s);
       } else {
         body.setAttribute('hidden', '');
         tog?.setAttribute('aria-expanded', 'false');
-        if (tog) tog.textContent = '▸';
         expandedCards.delete(sessionId);
       }
     } else if (act === 'copy-link') {

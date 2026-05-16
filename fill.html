@@ -21,6 +21,17 @@
   <script src="/js/fill.js?v=11" defer></script>
   <script src="/js/footer.js?v=11" defer></script>
   <script src="/js/analytics.js?v=11" defer></script>
+  <script>
+    // PWA service worker — caches the patient fill page so a refresh
+    // during fill doesn't lose the form. The SW only handles static
+    // files; patient answers travel over the WebRTC channel, never
+    // through any cache.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
 </head>
 <body class="app-page">
   <header class="topbar">

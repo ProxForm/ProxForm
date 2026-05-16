@@ -7,7 +7,9 @@
   --surface-2: #fff1c4;
   --border: #1a1a1a;
   --text: #0f0f0f;
-  --muted: #5a5040;
+  /* No gray anywhere — secondary text is the same ink as body text.
+     Hierarchy comes from weight/size/placement, not from washed-out gray. */
+  --muted: #0f0f0f;
   --primary: #e30613;
   --primary-ink: #ffffff;
   --primary-hover: #b8040f;
@@ -20,22 +22,27 @@
   --radius: 6px;
 }
 
+/* Dark mode is intentionally black-and-white for the UI — no pink/coral.
+   The only colour is the yellow accent on filled elements (badges, flow
+   cards, the onboarding hint, the GDPR pitch card). "Primary" is therefore
+   a bright cream, so links / emphasis / buttons read as clean white-on-
+   black instead of vibrating red. */
 html[data-theme="dark"] {
   --bg: #14110a;
   --surface: #1f1a10;
   --surface-2: #2a221a;
-  --border: #fcd116;
-  --text: #fff8e1;
-  --muted: #b8a878;
-  --primary: #ff2d3a;
-  --primary-ink: #14110a;
-  --primary-hover: #ff5060;
-  --primary-dark: #c00010;
-  --primary-light: #ff6470;
-  --accent: #fcd116;
-  --stitch: #fcd116;
-  --danger: #ff8585;
-  --shadow: 2px 2px 0 rgba(252, 209, 22, 0.4);
+  --border: #4d4636;          /* neutral warm-gray frame, no yellow glare */
+  --text: #f4ecd6;
+  --muted: #f4ecd6;           /* same as text — no gray, dark mode is B&W */
+  --primary: #f6efda;         /* emphasis = bright cream, not red */
+  --primary-ink: #14110a;     /* dark text on the cream "primary" buttons */
+  --primary-hover: #ffffff;
+  --primary-dark: #cabf9f;
+  --primary-light: #ffffff;
+  --accent: #e8c34a;          /* the one colour kept — yellow fills */
+  --stitch: #e8c34a;
+  --danger: #d9745f;          /* restrained terracotta, destructive only */
+  --shadow: 2px 2px 0 rgba(232, 195, 74, 0.28);
 }
 
 * { box-sizing: border-box; }
@@ -139,8 +146,79 @@ p { margin: 0 0 1em; }
 .topnav a:hover { background: var(--surface-2); text-decoration: none; color: var(--primary); }
 .topnav a:target,
 .topnav a.active { color: var(--primary); }
+
+/* Hamburger button — injected by theme.js, only shown on mobile. */
+.nav-toggle {
+  display: none;
+  background: var(--surface);
+  border: 2px solid var(--ink, #111);
+  border-radius: 8px;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  color: var(--text);
+}
+
 @media (max-width: 640px) {
-  .topnav { display: none; }
+  /* Anchor the dropdown to the bar. The bar itself stays a clean single
+     row: brand on the left, then net-status + theme, hamburger far right. */
+  .topbar { position: relative; }
+  .brand { margin-right: auto; }            /* push the rest to the right */
+  .topbar-actions { order: 4; }
+  .nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    order: 5;                               /* hamburger is the rightmost item */
+    margin-left: 0.6rem;
+  }
+
+  /* Nav is an absolute dropdown PANEL that drops below the bar and overlays
+     the page content — it does NOT push the bar's layout around (that was
+     the bug: flex-wrap made it render inline). */
+  .topnav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    background: var(--surface);
+    border-bottom: 2px solid var(--ink, #111);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
+    margin: 0;
+    padding: 0 1.25rem;        /* rows handle their own vertical padding */
+    gap: 0;
+    z-index: 300;
+  }
+  .topbar.nav-open .topnav { display: flex; }
+  /* Flat, edge-to-edge rows — no per-item rounding, no chip look. A hairline
+     divider sits between rows (not around them) and the active route gets a
+     left accent bar instead of a box outline. */
+  .topnav a {
+    padding: 0.95rem 0.4rem;
+    border-radius: 0;
+    border: 0;
+    border-left: 3px solid transparent;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .topnav a + a { border-top: 1px solid var(--border); }
+  .topnav a:hover { background: var(--surface-2); }
+  .topnav a:target,
+  .topnav a.active {
+    color: var(--primary);
+    border-left-color: var(--primary);
+    background: var(--surface-2);
+  }
+
+  /* De-clutter the action cluster on a phone — the conn-status pill and
+     the redundant "Build a form" text button just crowd the bar; the nav
+     dropdown already has Build. Net-status + theme stay (quick glances). */
+  .topbar-actions .conn-status,
+  .topbar-actions .text-btn { display: none; }
 }
 
 .conn-status {
@@ -368,7 +446,7 @@ label > span {
   color: var(--muted);
 }
 
-input[type="text"], input[type="number"], input[type="date"], textarea {
+input[type="text"], input[type="number"], input[type="date"], textarea, select {
   width: 100%;
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--border);
@@ -377,7 +455,25 @@ input[type="text"], input[type="number"], input[type="date"], textarea {
   color: var(--text);
   font: inherit;
 }
-input:focus, textarea:focus {
+/* Native <select> chrome (gray box + OS arrows) doesn't match the theme.
+   Strip it and draw our own caret so it reads like every other input. */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 2.2rem;
+  cursor: pointer;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text) 50%),
+    linear-gradient(135deg, var(--text) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.05rem) 1.05rem,
+    calc(100% - 0.75rem) 1.05rem;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+select::-ms-expand { display: none; }
+input:focus, textarea:focus, select:focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(227, 6, 19, 0.25);
@@ -426,6 +522,7 @@ html { scroll-behavior: smooth; }
 
 .forms-list {
   display: grid; gap: 0.85rem; margin-top: 1.25rem;
+  align-items: start;   /* cards hug content; never stretch to fill the track */
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 }
 /* Submissions render oldest-first as a vertical log — first-come-first-
@@ -439,21 +536,32 @@ html { scroll-behavior: smooth; }
   /* Tighter padding — every card should fit on one row on wide screens. */
   padding: 0.7rem 1rem;
 }
+/* Cards must hug their content height — grid items default to align:stretch,
+   which was blowing each card up to fill the tall list track and spraying a
+   huge void between the name and the buttons. */
+#submissions-list { align-items: start; }
+#submissions-list .form-card.submission-card {
+  align-self: start;
+  height: auto;
+  min-height: 0;
+}
 #submissions-list .form-card .row {
   margin-top: 0;
   justify-content: flex-start;
 }
 
-/* Single-row card layout: name+meta on the left, action buttons on the
-   right, both vertically centred. Wraps to a stacked layout below 720px. */
+/* Single clean row: name+meta on the left, action buttons on the right,
+   space-between, NO wrap on desktop (stacks only at ≤720px). info must not
+   flex-grow past the actions or it pushes them onto a second line. */
 .submission-card .sub-card-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1.2rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 .submission-card .sub-card-info {
-  flex: 1 1 360px;
+  flex: 1 1 auto;
   min-width: 0;
 }
 .submission-card .sub-card-actions {
@@ -518,9 +626,11 @@ html { scroll-behavior: smooth; }
   display: inline-block;
   font-weight: 700;
   font-size: 0.95rem;
-  color: var(--text);
+  /* Always dark text — the badge is always on a yellow ground in both
+     themes, so var(--text) (cream in dark) would be unreadable. */
+  color: #1a1500;
   background: var(--accent, #fcd116);
-  border: 2px solid var(--ink, #111);
+  border: 2px solid #1a1500;
   border-radius: 6px;
   padding: 0.05rem 0.45rem;
   margin-right: 0.25rem;
@@ -1096,22 +1206,23 @@ html[data-theme="dark"] pre.import-doc { box-shadow: 3px 3px 0 var(--accent); }
   letter-spacing: 0.05em;
 }
 
+/* No box here — the outer .builder-preview card is the only frame. This
+   used to add a 3rd nested rectangle (card > frame > patient-form >
+   empty-box). Now it's just a content area. Test-mode re-adds a border
+   because the attention outline is the whole point of test mode. */
 .preview-frame, .preview-card {
   position: relative;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  padding: 1rem;
-  box-shadow: var(--shadow);
+  padding: 0;
 }
 
 /* Test-fill mode — inputs become interactive so the clinician can rehearse.
    A yellow banner across the top makes it impossible to confuse with the
    real form, and the frame gets an attention border. */
 .preview-frame.test-mode {
-  border-color: var(--accent);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
   box-shadow: 4px 4px 0 var(--accent);
-  padding-top: 2.6rem;
+  padding: 2.6rem 1rem 1rem;
 }
 .preview-frame.test-mode::before {
   content: "🧪 TEST MODE — answers stay on this device, never transmitted";
@@ -1212,6 +1323,20 @@ html[data-theme="dark"] pre.import-doc { box-shadow: 3px 3px 0 var(--accent); }
   border-radius: 0;
   border-color: #555;
   box-shadow: none;
+}
+/* Inside the builder preview pane the outer .builder-preview card is the
+   only frame — strip the rendered form's own border/background/shadow so
+   it isn't yet another box-in-a-box. The real fill page + submission view
+   keep their paper-sheet border (they have no .builder-preview ancestor). */
+.builder-preview .patient-form {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+.builder-preview .preview-empty {
+  border: 1px dashed var(--border);
+  background: transparent;
 }
 .preview-form .intake-section,
 .printing-preview .intake-section {
@@ -1831,6 +1956,66 @@ html[data-theme="dark"] body.home-page::before {
 /* Mirror layer — sits between the halftone dots and the content. A diagonal
    sheen reads like glass catching light; the radial wash brightens the center
    so the foreground text stays the focus. */
+/* Google Analytics consent banner (js/analytics.js) — landing page only.
+   GA does not load until Accept is clicked. Pop-art bottom bar. */
+.ga-consent {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1000;
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 3px solid var(--ink, #111);
+  border-radius: 14px;
+  box-shadow: 6px 6px 0 var(--ink, #111);
+  padding: 0.9rem 1.1rem;
+}
+.ga-consent-text { margin: 0; flex: 1 1 280px; font-size: 0.9rem; line-height: 1.45; }
+.ga-consent-text a { color: var(--primary); font-weight: 700; text-decoration: underline; }
+.ga-consent-actions { display: flex; gap: 0.5rem; flex: 0 0 auto; }
+.ga-consent button {
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border: 2.5px solid var(--ink, #111);
+  border-radius: 8px;
+  box-shadow: 2px 2px 0 var(--ink, #111);
+}
+.ga-consent .ga-decline { background: var(--surface-2); color: var(--text); }
+.ga-consent .ga-accept  { background: var(--accent); color: #1a1500; }
+.ga-consent button:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--ink, #111); }
+@media (max-width: 560px) {
+  .ga-consent { flex-direction: column; align-items: stretch; }
+  .ga-consent-actions { justify-content: flex-end; }
+}
+
+/* First-run onboarding hint on the Portal — only rendered when the clinic
+   has no saved forms. Pop-art callout so a brand-new user isn't staring
+   at an empty dashboard wondering what to do. */
+.onboarding-hint {
+  background: var(--accent, #fcd116);
+  color: var(--ink, #111);
+  border: 3px solid var(--ink, #111);
+  border-radius: 14px;
+  box-shadow: 6px 6px 0 var(--ink, #111);
+  padding: 1.1rem 1.4rem;
+  margin: 0 0 1rem;
+}
+.onboarding-hint h3 { margin: 0 0 0.5rem; font-size: 1.1rem; font-weight: 800; }
+.onboarding-hint p  { margin: 0.35rem 0; }
+.onboarding-hint ol { margin: 0.5rem 0 0.5rem 1.2rem; padding: 0; }
+.onboarding-hint li { margin: 0.25rem 0; }
+.onboarding-hint a  { color: var(--ink, #111); text-decoration: underline; font-weight: 700; }
+.onboarding-hint .small { font-size: 0.88rem; }
+
 /* ── Privacy shield (js/shield.js) ──────────────────────────────────── */
 
 .sub-shield-picker {
@@ -2211,6 +2396,18 @@ body.home-page main > section + section { border-top: 1px solid var(--border); }
   color: #fff;
 }
 .home-page .pitch-card.pitch-gdpr .pitch-aside { color: rgba(255, 255, 255, 0.85); }
+/* Dark mode: --primary is cream, so the red→white card would vanish.
+   Recolour it as the yellow pop card with dark text instead. */
+html[data-theme="dark"] .home-page .pitch-card.pitch-gdpr {
+  background: var(--accent);
+  color: #1a1500;
+}
+html[data-theme="dark"] .home-page .pitch-card.pitch-gdpr .pitch-aside { color: #1a1500; }
+html[data-theme="dark"] .home-page .pitch-card.pitch-gdpr .pitch-tag {
+  background: #1a1500;
+  color: var(--accent);
+  border-color: #1a1500;
+}
 .home-page .pitch-tag {
   display: inline-block;
   align-self: flex-start;
@@ -2280,14 +2477,6 @@ body.home-page main > section + section { border-top: 1px solid var(--border); }
   padding: 4rem 0 2.5rem;
   text-align: center;
   position: relative;
-}
-.hero::before {
-  content: "";
-  position: absolute;
-  inset: -2rem 10% auto 10%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, var(--primary-light) 50%, transparent 100%);
-  opacity: 0.4;
 }
 .gdpr-badge {
   display: inline-flex; align-items: center; gap: 0.6rem;
@@ -2658,19 +2847,55 @@ html[data-theme="dark"] .footer {
     radial-gradient(circle, rgba(252, 209, 22, 0.07) 1px, transparent 1.5px);
 }
 html[data-theme="dark"] .footer::before { border-bottom-color: var(--accent); }
-html[data-theme="dark"] .footer-tagline strong,
-html[data-theme="dark"] .footer-tagline em,
+/* Dark footer = ONE yellow pop ("PRIVATE BY DESIGN.") + flat white text.
+   The old layout stacked a yellow box next to a cream box next to a yellow
+   chip — three competing highlights. Now: strong stays the single yellow
+   block; em is plain bold cream text; the Artivicolab attribution is a
+   simple underlined link, not a chip. */
+html[data-theme="dark"] .footer-tagline strong {
+  background: var(--accent);
+  color: #1a1500;
+  border-color: #1a1500;
+  box-shadow: 2px 2px 0 #1a1500;
+}
+html[data-theme="dark"] .footer-tagline em {
+  background: none;
+  color: var(--text);
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 3px;
+}
 html[data-theme="dark"] .footer-nav a,
-html[data-theme="dark"] .footer-nav .link-btn,
-html[data-theme="dark"] .footer-attribution a {
+html[data-theme="dark"] .footer-nav .link-btn {
   border-color: var(--accent);
   box-shadow: 2px 2px 0 var(--accent);
 }
 html[data-theme="dark"] .footer-nav a:hover,
-html[data-theme="dark"] .footer-nav .link-btn:hover { box-shadow: 3px 3px 0 var(--accent); }
+html[data-theme="dark"] .footer-nav .link-btn:hover {
+  background: var(--accent);
+  color: #1a1500;
+  box-shadow: 3px 3px 0 var(--accent);
+}
 html[data-theme="dark"] .footer-nav a:active,
 html[data-theme="dark"] .footer-nav .link-btn:active { box-shadow: 1px 1px 0 var(--accent); }
 html[data-theme="dark"] .footer-attribution { border-top-color: var(--accent); }
+html[data-theme="dark"] .footer-attribution a {
+  background: none;
+  color: var(--text);
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 3px;
+}
+html[data-theme="dark"] .footer-attribution a:hover {
+  background: none;
+  color: var(--accent);
+}
 
 @media print { .footer { display: none !important; } }
 
@@ -2847,10 +3072,10 @@ html[data-theme="dark"] .footer-attribution { border-top-color: var(--accent); }
 .dash-section h2 .small { font-size: 0.8rem; font-weight: normal; }
 
 .dash-sender {
-  border: 1px solid var(--border, #d8dadf);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1rem 1.1rem;
-  background: var(--card-bg, #f8f9fb);
+  background: var(--surface-2);
   margin-top: 0.75rem;
 }
 .dash-sender-row {
@@ -2863,7 +3088,7 @@ html[data-theme="dark"] .footer-attribution { border-top-color: var(--accent); }
   display: block;
   font-size: 0.85rem;
   margin-bottom: 0.25rem;
-  color: var(--muted-fg, #5a6172);
+  color: var(--muted);
 }
 .dash-sender-field select,
 .dash-sender-field input {
@@ -2881,16 +3106,16 @@ html[data-theme="dark"] .footer-attribution { border-top-color: var(--accent); }
 }
 .active-sessions .empty {
   padding: 1rem 1.1rem;
-  border: 1px dashed var(--border, #d8dadf);
+  border: 1px dashed var(--border);
   border-radius: 10px;
   margin: 0;
 }
 
 .session-card {
-  border: 1px solid var(--border, #d8dadf);
-  border-left: 4px solid var(--border, #d8dadf);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
   border-radius: 10px;
-  background: var(--card-bg, #ffffff);
+  background: var(--surface);
   overflow: hidden;
 }
 .session-card.state-waiting       { border-left-color: #d3a317; }
@@ -2909,19 +3134,37 @@ html[data-theme="dark"] .footer-attribution { border-top-color: var(--accent); }
   padding: 0.55rem 0.85rem;
   font-size: 0.9rem;
 }
+/* Matches the builder's .field-toggle: a boxed caret that rotates -90°
+   when collapsed, yellow on hover. Glyph is always ▾; CSS handles the
+   direction via [aria-expanded]. */
 .session-card-toggle {
-  background: none;
-  border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
   padding: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 1rem;
-  width: 1.4rem;
-  color: var(--fg, #1a1d24);
+  flex-shrink: 0;
+  transition: transform 140ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+.session-card-toggle[aria-expanded="false"] { transform: rotate(-90deg); }
+.session-card-head:hover .session-card-toggle,
+.session-card-toggle:hover {
+  background: var(--accent);
+  border-color: #0f0f0f;
 }
 .session-card-id {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.8rem;
-  color: var(--muted-fg, #5a6172);
+  color: var(--muted);
 }
 .session-card-label {
   font-weight: 600;
@@ -2930,7 +3173,7 @@ html[data-theme="dark"] .footer-attribution { border-top-color: var(--accent); }
   white-space: nowrap;
 }
 .session-card-title {
-  color: var(--muted-fg, #5a6172);
+  color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2941,7 +3184,7 @@ html[data-theme="dark"] .footer-attribution { border-top-color: var(--accent); }
 }
 .session-card-time {
   font-variant-numeric: tabular-nums;
-  color: var(--muted-fg, #5a6172);
+  color: var(--muted);
   font-size: 0.85rem;
 }
 .session-card-state {
@@ -2958,13 +3201,33 @@ html[data-theme="dark"] .footer-attribution { border-top-color: var(--accent); }
 .session-card.state-submitted    .session-card-state { background: rgba(91,110,225,0.18); color: #3a48ad; }
 .session-card.state-dormant      .session-card-state { background: rgba(139,108,44,0.18); color: #6b5219; }
 
+/* Dark mode: the light tint + dark-ink pills are unreadable on a dark
+   card. The card's coloured left-border already signals state, so the
+   pill just needs to be legible — translucent dark chip, cream text. */
+html[data-theme="dark"] .session-card-state {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+html[data-theme="dark"] .session-card.state-connected    .session-card-state,
+html[data-theme="dark"] .session-card.state-waiting      .session-card-state,
+html[data-theme="dark"] .session-card.state-connecting   .session-card-state,
+html[data-theme="dark"] .session-card.state-disconnected .session-card-state,
+html[data-theme="dark"] .session-card.state-submitted    .session-card-state,
+html[data-theme="dark"] .session-card.state-dormant      .session-card-state {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
 .session-card-body {
   padding: 0.75rem 0.85rem 1rem;
-  border-top: 1px solid var(--border, #e3e5ea);
+  border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
 }
+/* `display: flex` above beats the UA [hidden]{display:none}, so the body
+   never actually collapsed. Force it. */
+.session-card-body[hidden] { display: none !important; }
 .session-card-body .readonly-field { margin: 0; }
 .session-card-body .copy-row { display: flex; gap: 0.4rem; }
 .session-card-body .copy-row input { flex: 1; min-width: 0; }
@@ -2977,30 +3240,42 @@ html[data-theme="dark"] .footer-attribution { border-top-color: var(--accent); }
 }
 
 .card-preview {
-  border: 1px solid var(--border, #e3e5ea);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.6rem;
-  background: var(--card-bg, #fbfbfc);
+  background: var(--surface-2);
   max-height: 360px;
   overflow: auto;
 }
 .card-preview .patient-form { border: 0; padding: 0; box-shadow: none; }
 
 @media (max-width: 720px) {
+  /* Drop the 7-col grid entirely on mobile — it never aligned cleanly.
+     Simple flex-wrap: toggle + id + state on line 1, then the big label,
+     then title + time. Each piece on its own row, left-aligned. */
   .session-card-head {
-    grid-template-columns: auto auto 1fr;
-    grid-template-areas:
-      "toggle id state"
-      "label  label label"
-      "title  title title"
-      "sas    time time";
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.5rem;
+    padding: 0.7rem 0.85rem;
   }
-  .session-card-toggle { grid-area: toggle; }
-  .session-card-id     { grid-area: id; }
-  .session-card-label  { grid-area: label; }
-  .session-card-title  { grid-area: title; }
-  .session-card-sas    { grid-area: sas; }
-  .session-card-time   { grid-area: time; text-align: right; }
-  .session-card-state  { grid-area: state; }
+  .session-card-toggle { order: 1; flex: 0 0 auto; }
+  .session-card-id     { order: 2; flex: 0 0 auto; }
+  .session-card-state  { order: 3; flex: 0 0 auto; margin-left: auto; }
+  .session-card-label  {
+    order: 4;
+    flex: 1 0 100%;
+    font-size: 1.05rem;
+    font-weight: 800;
+    white-space: normal;          /* allow the ticket/name to wrap */
+  }
+  .session-card-title  {
+    order: 5;
+    flex: 1 1 auto;
+    white-space: normal;
+  }
+  .session-card-sas    { order: 6; flex: 0 0 auto; }
+  .session-card-time   { order: 7; flex: 0 0 auto; margin-left: auto; }
 }
 

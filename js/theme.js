@@ -15,4 +15,39 @@
     root.setAttribute('data-theme', next);
     localStorage.setItem(KEY, next);
   };
+
+  // Mobile nav toggle. The topnav is hidden under 640px (CSS) — without a
+  // hamburger there'd be no way to navigate on a phone. Injected here
+  // because theme.js loads on every page that has a topbar, so every page
+  // gets the toggle without per-file HTML edits.
+  function wireMobileNav() {
+    const bar = document.querySelector('.topbar');
+    const nav = bar && bar.querySelector('.topnav');
+    if (!bar || !nav || bar.querySelector('.nav-toggle')) return;
+
+    const btn = document.createElement('button');
+    btn.className = 'nav-toggle';
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Toggle menu');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.textContent = '☰';
+
+    function setOpen(open) {
+      bar.classList.toggle('nav-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.textContent = open ? '✕' : '☰';
+    }
+    btn.addEventListener('click', () => setOpen(!bar.classList.contains('nav-open')));
+    // Tapping a link (hash route or page link) closes the menu.
+    nav.addEventListener('click', (e) => { if (e.target.closest('a')) setOpen(false); });
+
+    const actions = bar.querySelector('.topbar-actions');
+    bar.insertBefore(btn, actions || null);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', wireMobileNav);
+  } else {
+    wireMobileNav();
+  }
 })();

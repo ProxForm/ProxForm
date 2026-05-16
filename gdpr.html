@@ -25,7 +25,6 @@
   <header class="topbar">
     <a class="brand" href="/">ProxForm</a>
     <nav class="topnav" aria-label="Primary navigation">
-      <a href="/">Home</a>
       <a href="/app.html#/received">Portal</a>
       <a href="/app.html#/build">Build</a>
       <a href="/app.html#/forms">My forms</a>
@@ -87,8 +86,8 @@
         <li><strong>Two-channel out-of-band sharing.</strong> The invitation link travels through one channel (email), the passphrase through a different channel (SMS, phone). Compromising one channel is not enough to read the form.</li>
         <li><strong>Session verification (SAS).</strong> Both sides see a short verification code derived from session nonces. Reading it aloud defeats a person-in-the-middle who somehow obtained both channels.</li>
         <li><strong>No accounts.</strong> No registration, no login, no identifier ProxForm could associate with a clinician or patient.</li>
-        <li><strong>No cookies.</strong> ProxForm sets zero cookies.</li>
-        <li><strong>No tracking, no analytics.</strong> The analytics module ships inert and is disabled by default. Enabling it would introduce a third-party processor and require a consent banner.</li>
+        <li><strong>No cookies in the app or on the patient path.</strong> The ProxForm app (form builder, portal, dashboard) and the patient form page set zero cookies and load zero analytics. The only place anything is counted is the public marketing landing page (see next point) — and never the pages that carry patient data.</li>
+        <li><strong>Landing-page analytics are opt-in.</strong> The public landing page (<code>/</code>) offers Google Analytics purely to count visits, and it does <em>not</em> load until the visitor explicitly clicks <em>Accept</em> on a consent banner. Decline and nothing loads, ever. This analytics never runs on the app or the patient page — those collect nothing regardless of the choice.</li>
         <li><strong>Auditable.</strong> Every line of crypto and protocol code runs in your browser. Open DevTools, inspect it, verify it. No obfuscation, no minification of the security-critical code.</li>
         <li><strong>No hidden network traffic.</strong> The only outbound network call ProxForm makes is the WebRTC STUN probe to gather a NAT-reflexive candidate. No telemetry, no error reports, no usage pings.</li>
       </ul>
@@ -112,7 +111,7 @@
       <ul class="why-list">
         <li><strong>IndexedDB on the clinician's device.</strong> Form definitions (drafts and saved forms) and received submissions live in IndexedDB scoped to the clinician's browser. Clearing browser data removes them.</li>
         <li><strong>IndexedDB on the patient's device.</strong> A partially-filled answer set is saved as a draft so the patient can refresh without losing input. The draft is cleared automatically on successful submission.</li>
-        <li><strong>localStorage.</strong> One key only: <code>proxform_theme</code> for the light/dark preference. No patient data, no tracking IDs.</li>
+        <li><strong>localStorage.</strong> Theme preference (<code>proxform_theme</code>), the shield-timeout and ticket-counter preferences, and — on the public landing page only — your analytics consent choice (<code>proxform_ga_consent</code>: granted or denied). No patient data, no tracking IDs, nothing that leaves the device except the Google Analytics ping you explicitly opted into on the landing page.</li>
         <li><strong>No cross-origin storage.</strong> Browser storage is sandboxed to the ProxForm origin — no other site can read it.</li>
         <li><strong>Persistence request.</strong> ProxForm asks the browser to mark its storage as persistent so drafts aren't evicted under disk pressure. The browser may grant or deny this; either way, nothing leaves the device.</li>
       </ul>
@@ -125,7 +124,7 @@
         <li><strong>No email integration.</strong> ProxForm cannot email a completed form on the clinician's behalf. That would require a server-side SMTP relay, which we do not run.</li>
         <li><strong>No cloud sync.</strong> Forms and submissions do not sync across devices through ProxForm. Export the JSON yourself if you need a portable copy.</li>
         <li><strong>No accounts, no SSO.</strong> No identity provider is involved.</li>
-        <li><strong>No analytics, no telemetry.</strong> No Google Analytics, no Sentry, no PostHog, no first-party pixel. The analytics file ships disabled.</li>
+        <li><strong>No analytics or telemetry in the app or on the patient path.</strong> The builder, portal, dashboard, and the patient form page run no Google Analytics, no Sentry, no PostHog, no pixel — nothing. The only analytics anywhere is consent-gated Google Analytics on the public marketing landing page, which never sees the app or any patient data.</li>
         <li><strong>No third-party fonts or scripts.</strong> No Google Fonts, no CDN-hosted JavaScript. Everything is served from the ProxForm origin.</li>
         <li><strong>No CAPTCHA.</strong> No reCAPTCHA or hCaptcha — those load third-party JavaScript and collect signals.</li>
       </ul>

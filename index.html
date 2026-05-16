@@ -30,6 +30,15 @@
   <script src="/js/footer.js?v=11" defer></script>
   <script src="/js/analytics.js?v=11" defer></script>
   <script defer>window.addEventListener('DOMContentLoaded', () => ProxNet.checkAndDisplay('net-status'));</script>
+  <script>
+    // PWA service worker — caches the landing page and assets so repeat
+    // visits load instantly. SW handles static files only; no PHI path.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
 
   <script type="application/ld+json">
   {
@@ -53,7 +62,7 @@
       "Conditional logic, multi-page forms, file/photo/signature fields",
       "Paper-style PDF export with patient answers inline",
       "YAML and JSON import-export",
-      "No accounts, no cookies, no analytics"
+      "No accounts, no cookies, no analytics in the app or on the patient path"
     ]
   }
   </script>
@@ -110,6 +119,22 @@
           "@type": "Answer",
           "text": "ProxForm runs entirely in your browser with no accounts and no analytics. Pricing for clinical use will be announced — early users can contact Artivicolab for access."
         }
+      },
+      {
+        "@type": "Question",
+        "name": "Where are my received submissions stored and can I lose them?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Received submissions are stored in your browser's local IndexedDB on that device only. There is no server copy and no cloud backup. If you clear browser data or switch device, they are gone. Export anything you need to keep via the Export JSON or Print/PDF buttons before clearing browser data."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does this site use analytics?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Only this public landing page, and only with your consent. It offers Google Analytics purely to count visits, and it does not load until you click Accept on the consent banner — decline and nothing loads. The ProxForm app (builder, portal, dashboard) and the patient form page run zero analytics and zero cookies regardless of that choice; patient data never touches Google or any third party."
+        }
       }
     ]
   }
@@ -120,7 +145,6 @@
   <header class="topbar">
     <a class="brand" href="/">ProxForm</a>
     <nav class="topnav" aria-label="Primary navigation">
-      <a href="/" class="active">Home</a>
       <a href="/app.html#/received">Portal</a>
       <a href="/app.html#/build">Build</a>
       <a href="/app.html#/forms">My forms</a>
@@ -298,6 +322,14 @@
       <details>
         <summary>How do I clean the device at the end of a shift?</summary>
         <p>One button on the Portal: <em>End shift — wipe patient data</em>. Confirms with an explicit warning, then deletes every submission, every dormant invite, every patient draft. Your form templates and your shield/theme preferences stay. Next person at the device starts at ticket 1A on a clean inbox.</p>
+      </details>
+      <details>
+        <summary>Does this site use analytics or cookies?</summary>
+        <p><strong>Only this landing page, and only if you say yes.</strong> It offers Google Analytics purely to count visits — and it does <em>not</em> load until you click <em>Accept</em> on the consent banner. Decline and nothing loads, ever. The ProxForm app and the patient form page run <strong>zero analytics and zero cookies</strong> no matter what you pick here — patient data never touches Google or any third party. <a href="/gdpr.html">Full detail on the GDPR page →</a></p>
+      </details>
+      <details>
+        <summary>Where exactly do my received submissions live — and can I lose them?</summary>
+        <p>Received submissions are stored in your browser's local IndexedDB on <strong>this device only</strong>. There is no server copy and no cloud backup — that's the whole point. Consequence: if you clear your browser data, use a different browser or device, or your device is wiped, those submissions are gone. <strong>Before clearing browser data, export anything you need to keep</strong> — every submission has an <em>Export JSON</em> button, and the detail view has <em>Print / PDF</em>. Treat ProxForm submissions like a paper inbox: move the ones you need into your records system, shred the rest with End Shift.</p>
       </details>
     </section>
 

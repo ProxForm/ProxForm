@@ -1,0 +1,18 @@
+# ProxForm — only the public marketing pages are crawlable.
+#
+# The app shell and the patient pages are dynamic, contain no indexable
+# content, and sit on the PHI path. They are explicitly disallowed here
+# (and also carry <meta name="robots" content="noindex">). Crawlers and
+# any analytics must stay on the marketing surface only.
+
+User-agent: *
+Disallow: /app.html
+Disallow: /builder.html
+Disallow: /forms.html
+Disallow: /received.html
+Disallow: /import.html
+Disallow: /fill.html
+
+# Everything else (/, /gdpr.html, /hipaa.html, static assets) is fine.
+
+Sitemap: https://proxform.com/sitemap.xml
