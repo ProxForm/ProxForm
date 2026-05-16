@@ -14,7 +14,7 @@
 (function () {
   'use strict';
 
-  var GA_ID = 'G-XXXXXXXXXX';            // ← REPLACE with your GA4 Measurement ID
+  var GA_ID = 'G-WTGX62S0G9';            // GA4 Measurement ID (ProxForm)
   var CONSENT_KEY = 'proxform_ga_consent';
 
   // Only the public landing page. gdpr.html / hipaa.html also use

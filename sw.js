@@ -1,7 +1,7 @@
 // © 2026 Artivicolab. All rights reserved. ProxForm — proprietary software. See LICENSE.
 // ProxForm service worker — network-first for HTML/CSS/JS, cache-first for assets.
 
-const CACHE = 'proxform-v11';
+const CACHE = 'proxform-v12';
 
 const ASSETS = [
   '/',
@@ -15,27 +15,27 @@ const ASSETS = [
   '/hipaa.html',
   '/import.html',
   '/404.html',
-  '/css/style.css?v=11',
-  '/js/crypto.js?v=11',
-  '/js/p2p.js?v=11',
-  '/js/sessions.js?v=11',
-  '/js/builder.js?v=11',
-  '/js/dashboard.js?v=11',
-  '/js/router.js?v=11',
-  '/js/dialog.js?v=11',
-  '/js/shield.js?v=11',
-  '/js/fill.js?v=11',
-  '/js/theme.js?v=11',
-  '/js/storage.js?v=11',
-  '/js/netcheck.js?v=11',
-  '/js/render.js?v=11',
-  '/js/cond.js?v=11',
-  '/js/sig.js?v=11',
-  '/js/import.js?v=11',
-  '/js/templates.js?v=11',
-  '/js/footer.js?v=11',
-  '/js/analytics.js?v=11',
-  '/js/bg.js?v=11',
+  '/css/style.css?v=12',
+  '/js/crypto.js?v=12',
+  '/js/p2p.js?v=12',
+  '/js/sessions.js?v=12',
+  '/js/builder.js?v=12',
+  '/js/dashboard.js?v=12',
+  '/js/router.js?v=12',
+  '/js/dialog.js?v=12',
+  '/js/shield.js?v=12',
+  '/js/fill.js?v=12',
+  '/js/theme.js?v=12',
+  '/js/storage.js?v=12',
+  '/js/netcheck.js?v=12',
+  '/js/render.js?v=12',
+  '/js/cond.js?v=12',
+  '/js/sig.js?v=12',
+  '/js/import.js?v=12',
+  '/js/templates.js?v=12',
+  '/js/footer.js?v=12',
+  '/js/analytics.js?v=12',
+  '/js/bg.js?v=12',
   '/manifest.json',
   '/icons/favicon.svg'
 ];

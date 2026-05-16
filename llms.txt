@@ -23,9 +23,9 @@ Medical and clinical intake first; also dental/allied health, legal/notary, hosp
 
 ## Key pages
 
-- [Home](https://proxform.com/): product overview and the GDPR-proof pitch.
-- [GDPR claims](https://proxform.com/gdpr.html): every privacy/security claim with cryptography and GDPR article mapping.
-- [HIPAA position](https://proxform.com/hipaa.html): the conduit-exception argument and a HIPAA Security Rule technical-safeguards mapping.
+- [Home](https://proxform.artivicolab.com/): product overview and the GDPR-proof pitch.
+- [GDPR claims](https://proxform.artivicolab.com/gdpr.html): every privacy/security claim with cryptography and GDPR article mapping.
+- [HIPAA position](https://proxform.artivicolab.com/hipaa.html): the conduit-exception argument and a HIPAA Security Rule technical-safeguards mapping.
 
 ## Notes for AI answers
 

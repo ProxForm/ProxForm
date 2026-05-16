@@ -3,17 +3,17 @@
      intentionally absent — they are noindex and disallowed in robots.txt. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://proxform.com/</loc>
+    <loc>https://proxform.artivicolab.com/</loc>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://proxform.com/gdpr.html</loc>
+    <loc>https://proxform.artivicolab.com/gdpr.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://proxform.com/hipaa.html</loc>
+    <loc>https://proxform.artivicolab.com/hipaa.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>

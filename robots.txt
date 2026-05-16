@@ -38,4 +38,4 @@ Disallow: /fill.html
 # Everything else (/, /gdpr.html, /hipaa.html, /llms.txt, static assets)
 # is fine for all of the above.
 
-Sitemap: https://proxform.com/sitemap.xml
+Sitemap: https://proxform.artivicolab.com/sitemap.xml
