@@ -306,6 +306,7 @@ User wants to charge eventually but no pricing page exists yet. Recommended path
 - Every source file has the single-line copyright signature at the top.
 - Destructive flows go through `ProxConfirm`, not `window.confirm`.
 - Patient-facing UI elements that show PHI on the clinician device need shielding (`.shielded-name` for inline name displays, `.prox-shield-extra` for extras outside the shield's container).
+- **Never put the contact email address in source.** `artivicolab@gmail.com` must never appear literally in any HTML/JS/CSS/text file (it gets harvested by scrapers). The only place the address exists is the two base64 fragments in `js/footer.js`, rebuilt into a `mailto:` at click time. Any "contact us" affordance — footer or inline in prose — uses `id="contact-btn"` or `class="contact-link"` (a `<button class="link-btn contact-link">contact us</button>`); `footer.js` binds both to the same build-at-click handler. Don't hardcode a `mailto:`, don't write the address in a privacy/legal page, don't add it to JSON-LD/schema. If you need a new contact entry point, give it `.contact-link`, not the literal email.
 
 ## Pointers
 
