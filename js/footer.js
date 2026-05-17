@@ -12,7 +12,10 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    const btn = document.getElementById('contact-btn');
-    if (btn) btn.addEventListener('click', openContact);
+    // Footer button (#contact-btn) plus any inline "contact us" trigger
+    // marked .contact-link — all use the same build-at-click-time mailto so
+    // the address never appears in page source.
+    document.querySelectorAll('#contact-btn, .contact-link')
+      .forEach(el => el.addEventListener('click', openContact));
   });
 })();

@@ -2851,6 +2851,14 @@ html[data-theme="dark"] .who-card {
   font: inherit;
   color: var(--text);
 }
+/* Inline "contact us" triggers in prose — look like the other text links
+   (footer #contact-btn keeps its own nav styling; it has no .contact-link). */
+.contact-link {
+  color: var(--primary);
+  text-decoration: underline;
+  font-weight: 700;
+}
+.contact-link:hover { color: var(--primary-hover); }
 
 .footer-attribution {
   margin: 0;
