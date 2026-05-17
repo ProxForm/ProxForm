@@ -65,7 +65,7 @@
         'This landing page uses <strong>Google Analytics</strong> only to count visits. ' +
         'The ProxForm app and the patient form pages collect <strong>nothing</strong> — ' +
         'no cookies, no analytics, no third parties. ' +
-        '<a href="/gdpr.html">Details</a>.' +
+        '<a href="/privacy.html">Privacy policy</a>.' +
       '</p>' +
       '<div class="ga-consent-actions">' +
         '<button type="button" class="ga-decline">Decline</button>' +
